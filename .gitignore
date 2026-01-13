@@ -1,0 +1,7 @@
+# Arquivos Ignorados ao dar commit
+*.shp 
+*.dbf 
+*.shx 
+
+# Ambientes Virtuais
+venv/
