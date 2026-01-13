@@ -3,7 +3,7 @@ import networkx as nx
 import geopandas as gpd
 import logging
 from typing import List, Set
-from utils.territorial_graph import TerritorialHierarchyGraph
+from graph import TerritorialHierarchyGraph
 
 class TerritorialValidator:
     # Ranking atualizado baseado nos nomes presentes em SEDE+regic
