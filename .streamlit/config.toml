@@ -13,3 +13,5 @@ toolbarMode = "minimal"
 
 [logger]
 level = "info"
+[server]
+maxMessageSize = 1000

@@ -1,4 +1,5 @@
 import logging
+import json
 import pandas as pd
 from pathlib import Path
 
@@ -34,47 +35,135 @@ class GeoValidaManager:
         """Propriedade para acessar o GeoDataFrame do map_generator."""
         return self.map_generator.gdf_complete if self.map_generator else None
 
+    def load_from_initialization_json(self):
+        """Carrega dados pre-consolidados do initialization.json e popula o grafo territorial."""
+        json_path = Path(__file__).parent / "data" / "initialization.json"
+        
+        if not json_path.exists():
+            self.logger.warning(f"Arquivo {json_path} não encontrado. Usando carregamento tradicional.")
+            return False
+        
+        try:
+            self.logger.info(f"Carregando dados pré-consolidados de {json_path}...")
+            
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Extrair municipios e UTPs
+            municipios = data.get('municipios', [])
+            utps = data.get('utps', [])
+            metadata = data.get('metadata', {})
+            
+            self.logger.info(f"  ✓ {len(municipios)} municipios carregados")
+            self.logger.info(f"  ✓ {len(utps)} UTPs carregadas")
+            
+            # Converter para dataframes para compatibilidade
+            df_municipios = pd.DataFrame(municipios)
+            df_utps = pd.DataFrame(utps)
+            
+            # --- POPULAR O GRAFO TERRITORIAL ---
+            self.logger.info("Populando grafo territorial...")
+            
+            # 1. Criar dicionário de municípios para lookup rápido
+            mun_dict = {m['cd_mun']: m for m in municipios}
+            
+            # 2. Iterar sobre cada município e criar a hierarquia
+            for mun in municipios:
+                cd_mun = int(mun['cd_mun'])
+                nm_mun = mun.get('nm_mun', str(cd_mun))
+                utp_id = str(mun.get('utp_id', 'SEM_UTP'))
+                rm_name = mun.get('regiao_metropolitana', '')
+                
+                # Define RM (usa SEM_RM se vazio)
+                if not rm_name or rm_name.strip() == '':
+                    rm_name = "SEM_RM"
+                
+                # Cria nó da RM se não existir
+                rm_node = f"RM_{rm_name}"
+                if not self.graph.hierarchy.has_node(rm_node):
+                    self.graph.hierarchy.add_node(rm_node, type='rm', name=rm_name)
+                    self.graph.hierarchy.add_edge(self.graph.root, rm_node)
+                
+                # Cria nó da UTP se não existir
+                utp_node = f"UTP_{utp_id}"
+                if not self.graph.hierarchy.has_node(utp_node):
+                    self.graph.hierarchy.add_node(utp_node, type='utp', utp_id=utp_id)
+                    self.graph.hierarchy.add_edge(rm_node, utp_node)
+                
+                # Cria nó do município
+                self.graph.hierarchy.add_node(cd_mun, type='municipality', name=nm_mun)
+                self.graph.hierarchy.add_edge(utp_node, cd_mun)
+                
+                # Registra sede e REGIC se for sede
+                if mun.get('sede_utp'):
+                    self.graph.utp_seeds[utp_id] = cd_mun
+                    regic = mun.get('regic', '')
+                    if regic:
+                        self.graph.mun_regic[cd_mun] = regic
+            
+            self.logger.info(f"  ✓ Grafo populado: {len(self.graph.hierarchy.nodes)} nós")
+            
+            # Carregar nos componentes
+            self.analyzer.full_flow_df = df_municipios
+            
+            # Armazenar dados na memoria
+            self.municipios_data = df_municipios
+            self.utps_data = df_utps
+            self.metadata = metadata
+            
+            self.logger.info("✓ Dados de initialization.json carregados com sucesso!")
+            return True
+            
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Erro ao fazer parsing do JSON: {e}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Erro ao carregar initialization.json: {type(e).__name__}: {e}")
+            return False
+
     def step_0_initialize_data(self):
         """Carrega as bases de dados e sincroniza o Grafo."""
         self.logger.info("Etapa 0: Carregando Bases de Dados...")
+        
+        # Carrega dados do JSON (que já população o grafo)
+        if not self.load_from_initialization_json():
+            self.logger.warning("Falha ao carregar de initialization.json, tentando fallback...")
+            # Fallback: carregamento tradicional
+            try:
+                self.logger.info(f"Carregando UTP base de {FILES['utp_base']}...")
+                if str(FILES['utp_base']).endswith('.xlsx'):
+                    df_utp = pd.read_excel(FILES['utp_base'], dtype=str)
+                else:
+                    df_utp = pd.read_csv(FILES['utp_base'], sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
+                self.logger.info(f"  ✓ UTP: {len(df_utp)} linhas carregadas")
+                
+                self.logger.info(f"Carregando SEDE+REGIC de {FILES['sede_regic']}...")
+                if str(FILES['sede_regic']).endswith('.xlsx'):
+                    df_regic = pd.read_excel(FILES['sede_regic'], dtype=str)
+                else:
+                    df_regic = pd.read_csv(FILES['sede_regic'], sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
+                self.logger.info(f"  ✓ REGIC: {len(df_regic)} linhas carregadas")
+                
+                # Popula o Grafo
+                self.graph.load_from_dataframe(df_utp, df_regic)
+            except Exception as e:
+                self.logger.error(f"Arquivo não encontrado: {e}")
+                self.logger.error(f"Verifique se os arquivos estão em data/01_raw/")
+                return False
+        
+        # Sempre carregar shapefiles (independente da fonte de dados)
+        self.logger.info(f"Carregando shapefiles...")
         try:
-            self.logger.info(f"Carregando UTP base de {FILES['utp_base']}...")
-            if str(FILES['utp_base']).endswith('.xlsx'):
-                df_utp = pd.read_excel(FILES['utp_base'], dtype=str)
-            else:
-                df_utp = pd.read_csv(FILES['utp_base'], sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
-            self.logger.info(f"  ✓ UTP: {len(df_utp)} linhas carregadas")
-            
-            self.logger.info(f"Carregando SEDE+REGIC de {FILES['sede_regic']}...")
-            if str(FILES['sede_regic']).endswith('.xlsx'):
-                df_regic = pd.read_excel(FILES['sede_regic'], dtype=str)
-            else:
-                df_regic = pd.read_csv(FILES['sede_regic'], sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
-            self.logger.info(f"  ✓ REGIC: {len(df_regic)} linhas carregadas")
-            
-            # Popula o Grafo
-            self.graph.load_from_dataframe(df_utp, df_regic)
-            
-            # Inicializa o GDF de municípios para o Mapa
-            self.logger.info(f"Carregando shapefiles...")
             self.map_generator.load_shapefiles()
-            self.logger.info(f"  ✓ Shapefiles carregados")
-            
-            self.logger.info(f"Dados carregados. Grafo: {len(self.graph.hierarchy.nodes)} nós.")
-            return True
-        except FileNotFoundError as e:
-            self.logger.error(f"Arquivo não encontrado: {e}")
-            self.logger.error(f"Verifique se os arquivos estão em data/01_raw/")
-            return False
-        except pd.errors.ParserError as e:
-            self.logger.error(f"Erro ao fazer parsing do arquivo: {e}")
-            self.logger.error(f"Verifique se o arquivo não está corrompido")
-            return False
+            self.logger.info(f"  ✓ Shapefiles carregados: {len(self.map_generator.gdf_complete)} geometrias")
         except Exception as e:
-            self.logger.error(f"Erro na Inicialização: {type(e).__name__}: {e}")
+            self.logger.error(f"  ❌ Erro ao carregar shapefiles: {e}")
             import traceback
             self.logger.error(traceback.format_exc())
-            return False
+            raise
+        
+        self.logger.info(f"Dados carregados. Grafo: {len(self.graph.hierarchy.nodes)} nós.")
+        return True
 
     def step_1_generate_initial_map(self):
         """Gera o mapa da situação atual das UTPs."""
@@ -92,7 +181,11 @@ class GeoValidaManager:
     def step_5_consolidate_functional(self):
         """Une UTPs baseadas estritamente em Fluxos (Passo 5)."""
         self.logger.info("Etapa 5: Consolidação Funcional (Fluxos)...")
-        changes = self.consolidator.run_functional_merging(self.analyzer.full_flow_df)
+        changes = self.consolidator.run_functional_merging(
+            self.analyzer.full_flow_df, 
+            self.map_generator.gdf_complete,
+            self.map_generator
+        )
         
         # Gera o mapa intermédio
         (self.map_generator
@@ -104,6 +197,9 @@ class GeoValidaManager:
     def step_7_territorial_cleanup(self):
         """Resolve UTPs unitárias usando REGIC + Adjacência (Passo 7)."""
         self.logger.info("Etapa 7: Limpeza Territorial Final (REGIC + Geografia)...")
+        
+        # Sincroniza antes de executar
+        self.map_generator.sync_with_graph(self.graph)
         
         # Executa a lógica corrigida (EPSG:5880 + Boundary Length)
         changes = self.consolidator.run_territorial_regic(

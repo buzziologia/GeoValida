@@ -175,28 +175,77 @@ class TerritorialGraph:
 
     def compute_graph_coloring(self, gdf: gpd.GeoDataFrame) -> Dict[int, int]:
         """
-        Computa coloração de grafo otimizada usando Spatial Join.
+        Computa coloração de grafo otimizada por UTPs e não por municípios.
+        Todos os municípios da mesma UTP terão a mesma cor.
+        UTPs vizinhas terão cores diferentes.
         """
         if gdf.empty:
             return {}
 
-        # 1. Criar grafo de adjacência
-        adjacency_graph = nx.Graph()
+        logging.info("Iniciando coloração baseada em UTPs...")
         
-        # 2. Usar spatial join para encontrar vizinhos (quem toca quem)
-        # 'overlap' ou 'touches' capturam adjacência territorial
-        neighbors = gpd.sjoin(gdf, gdf, predicate='touches', how='inner')
+        # 0. Verificar se UTP_ID existe e limpar NAs
+        if 'UTP_ID' not in gdf.columns:
+            logging.error("Coluna 'UTP_ID' não encontrada no GeoDataFrame")
+            return {}
         
-        # 3. Adicionar arestas ao grafo baseado no join
-        edges = neighbors[['CD_MUN_left', 'CD_MUN_right']].values
-        adjacency_graph.add_edges_from(edges)
+        # Remove linhas com UTP_ID faltando
+        gdf_clean = gdf.dropna(subset=['UTP_ID']).copy()
+        if gdf_clean.empty:
+            logging.error("Nenhum município com UTP_ID válido")
+            return {}
         
-        # Garantir que todos os municípios estejam no grafo como nós
-        adjacency_graph.add_nodes_from(gdf['CD_MUN'].unique())
+        # 1. Agrupar (Dissolver) geometrias por UTP para criar polígonos das UTPs
+        #    Mantém apenas a geometria para performance
+        try:
+            gdf_utps = gdf_clean[['UTP_ID', 'geometry']].copy()
+            gdf_utps = gdf_utps.dissolve(by='UTP_ID', aggfunc='first')
+            gdf_utps = gdf_utps.reset_index()  # Converte UTP_ID de índice para coluna
+            logging.info(f"Dissolve concluído: {len(gdf_utps)} UTPs criadas")
+        except Exception as e:
+            logging.error(f"Erro ao dissolver UTPs: {e}")
+            logging.error(f"Colunas do GDF: {gdf_clean.columns.tolist()}")
+            return {}
 
-        # 4. Algoritmo Greedy de Coloração (Strategy: DSATUR é mais eficiente para mapas)
-        coloring = nx.coloring.greedy_color(adjacency_graph, strategy='DSATUR')
+        # 2. Criar grafo de adjacência das UTPs
+        adjacency_graph = nx.Graph()
+        # Adiciona todas as UTPs como nós (agora está em coluna 'UTP_ID')
+        adjacency_graph.add_nodes_from(gdf_utps['UTP_ID'].unique())
+
+        # 3. Usar spatial join para encontrar UTPs vizinhas
+        #    Usamos gdf_utps contra ele mesmo
+        try:
+            neighbors = gpd.sjoin(gdf_utps, gdf_utps, predicate='touches', how='inner')
+            
+            # Filtra auto-relacionamentos (UTP tocando ela mesma)
+            neighbors = neighbors[neighbors['UTP_ID_left'] != neighbors['UTP_ID_right']]
+            
+            # 4. Adicionar arestas ao grafo
+            edges = zip(neighbors['UTP_ID_left'], neighbors['UTP_ID_right'])
+            adjacency_graph.add_edges_from(edges)
+            
+        except Exception as e:
+            logging.error(f"Erro ao calcular adjacência de UTPs: {e}")
+            # Fallback: colorir aleatoriamente ou sequencialmente se falhar
+            return {}
+
+        # 5. Algoritmo Greedy de Coloração (Strategy: DSATUR)
+        utp_coloring = nx.coloring.greedy_color(adjacency_graph, strategy='DSATUR')
         
-        logging.info(f"Coloração concluída: {len(coloring)} municípios coloridos.")
-        return coloring
+        # 6. Mapear a cor da UTP de volta para cada município
+        #    Resultado esperado: cd_mun -> color_index
+        final_coloring = {}
+        
+        # Cria um lookup UTP_ID -> Cor
+        # Itera sobre o GDF original (LIMPO) para atribuir a cor
+        for _, row in gdf_clean.iterrows():
+            cd_mun = row['CD_MUN']
+            utp_id = row['UTP_ID']
+            
+            # Se a UTP foi colorida, atribui a cor. Se não (casos isolados?), usa cor 0.
+            color = utp_coloring.get(utp_id, 0)
+            final_coloring[cd_mun] = color
+            
+        logging.info(f"Coloração de UTPs concluída: {len(utp_coloring)} UTPs coloridas mapeadas para municípios.")
+        return final_coloring
 

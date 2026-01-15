@@ -1,129 +1,397 @@
 # src/interface/dashboard.py
 import streamlit as st
-from src.interface.components import sidebar, metrics, map_viewer
+import pandas as pd
+import geopandas as gpd
+import folium
+import json
+from pathlib import Path
+from datetime import datetime
+from src.utils import DataLoader
+from src.interface.consolidation_loader import ConsolidationLoader
+
+
+# ===== CONFIGURAÇÃO DA PÁGINA =====
+st.set_page_config(
+    page_title="GeoValida - Consolidação Territorial",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# CSS customizado
+st.markdown("""
+<style>
+    :root {
+        --primary-color: #1351B4;
+    }
+    [data-testid="stMetricValue"] {
+        color: #1351B4;
+        font-weight: bold;
+    }
+    .step-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .step-initial { background-color: #e3f2fd; color: #1351B4; }
+    .step-final { background-color: #e8f5e9; color: #2e7d32; }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .status-executed { background-color: #d4edda; color: #155724; }
+    .status-pending { background-color: #fff3cd; color: #856404; }
+</style>
+""", unsafe_allow_html=True)
+
+
+@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id})
+def get_geodataframe(shapefile_path, df_municipios):
+    """Carrega, processa e simplifica o shapefile com cache."""
+    if not shapefile_path.exists():
+        return None
+
+    try:
+        gdf = gpd.read_file(shapefile_path)
+        
+        # Reprojetar para WGS84 (EPSG:4326) - Folium espera este CRS
+        # O shapefile original está em SIRGAS2000 (EPSG:4674)
+        if gdf.crs and gdf.crs.to_epsg() != 4326:
+            gdf = gdf.to_crs(epsg=4326)
+        
+        # Converter IDs para string
+        gdf['CD_MUN'] = gdf['CD_MUN'].astype(str)
+        # Garantir cópia para não afetar cache original do pandas se houver
+        df_mun_copy = df_municipios.copy()
+        df_mun_copy['cd_mun'] = df_mun_copy['cd_mun'].astype(str)
+        
+        # Juntar dados
+        gdf = gdf.merge(df_mun_copy[['cd_mun', 'uf', 'utp_id', 'sede_utp', 'regiao_metropolitana', 'nm_mun']], 
+                       left_on='CD_MUN', right_on='cd_mun', how='left')
+        
+        # Identificar nomes das sedes
+        df_sedes = df_mun_copy[df_mun_copy['sede_utp'] == True][['utp_id', 'nm_mun']].set_index('utp_id')
+        sede_mapper = df_sedes['nm_mun'].to_dict()
+        gdf['nm_sede'] = gdf['utp_id'].map(sede_mapper).fillna('')
+        
+        # Simplificar geometria com preservação de topologia - tolerance de 0.002 graus (~200m)
+        gdf['geometry'] = gdf.geometry.simplify(tolerance=0.002, preserve_topology=True)
+        gdf['regiao_metropolitana'] = gdf['regiao_metropolitana'].fillna('')
+        
+        # Manter apenas colunas essenciais
+        cols_to_keep = ['NM_MUN', 'CD_MUN', 'geometry', 'uf', 'utp_id', 'sede_utp', 'regiao_metropolitana', 'nm_sede']
+        existing_cols = [c for c in cols_to_keep if c in gdf.columns]
+        gdf = gdf[existing_cols]
+        
+        return gdf
+    except Exception as e:
+        st.error(f"Erro no processamento do mapa: {e}")
+        return None
+
+
+def render_map(gdf_filtered, title="Mapa"):
+    """Função auxiliar para renderizar um mapa folium."""
+    if gdf_filtered is None or gdf_filtered.empty:
+        st.info("📁 Nenhum dado para visualizar neste filtro.")
+        return
+    
+    # Criar cores por UTP com Paleta Pastel
+    utps_unique = gdf_filtered['utp_id'].dropna().unique()
+    colors = {}
+    PASTEL_PALETTE = [
+        '#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', 
+        '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f',
+        '#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6', '#ffff99'
+    ]
+    
+    for i, utp in enumerate(sorted(utps_unique)):
+        colors[utp] = PASTEL_PALETTE[i % len(PASTEL_PALETTE)]
+    
+    gdf_filtered = gdf_filtered.copy()
+    gdf_filtered['color'] = gdf_filtered['utp_id'].map(colors)
+    
+    # Criar mapa folium
+    m = folium.Map(
+        location=[-15, -55],
+        zoom_start=4,
+        tiles="CartoDB positron",
+        prefer_canvas=True,
+        control_scale=True
+    )
+    
+    # Fit bounds automáticos
+    if not gdf_filtered.empty:
+        bounds = gdf_filtered.total_bounds
+        m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]], padding=(0.05, 0.05))
+    
+    # Separar municípios regulares e sedes
+    gdf_members = gdf_filtered[~gdf_filtered['sede_utp']].copy()
+    gdf_seats = gdf_filtered[gdf_filtered['sede_utp']].copy()
+    
+    # Adicionar primeira camada: Municípios regulares
+    if not gdf_members.empty:
+        folium.GeoJson(
+            gdf_members.to_json(),
+            style_function=lambda x: {
+                'fillColor': x['properties'].get('color', '#cccccc'),
+                'color': '#ffffff',
+                'weight': 0.3,
+                'fillOpacity': 0.9
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['NM_MUN', 'utp_id', 'regiao_metropolitana', 'uf', 'nm_sede'],
+                aliases=['Município:', 'UTP:', 'RM:', 'UF:', 'Sede:'],
+                localize=True,
+                sticky=False
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NM_MUN', 'CD_MUN', 'utp_id', 'regiao_metropolitana', 'uf', 'nm_sede'],
+                aliases=['Município', 'Código IBGE', 'UTP', 'RM', 'UF', 'Sede UTP']
+            )
+        ).add_to(m)
+    
+    # Adicionar segunda camada: Sedes com destaque
+    if not gdf_seats.empty:
+        folium.GeoJson(
+            gdf_seats.to_json(),
+            style_function=lambda x: {
+                'fillColor': x['properties'].get('color', '#cccccc'),
+                'color': '#000000',
+                'weight': 3.0,
+                'fillOpacity': 1.0
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['NM_MUN', 'utp_id', 'regiao_metropolitana', 'uf', 'nm_sede'],
+                aliases=['Município Sede:', 'UTP:', 'RM:', 'UF:', 'Sede:'],
+                localize=True,
+                sticky=False
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NM_MUN', 'CD_MUN', 'utp_id', 'regiao_metropolitana', 'uf', 'nm_sede'],
+                aliases=['Município (SEDE)', 'Código IBGE', 'UTP', 'RM', 'UF', 'Sede UTP']
+            )
+        ).add_to(m)
+    
+    map_html = m._repr_html_()
+    st.components.v1.html(map_html, height=600, scrolling=False)
 
 
 def render_dashboard(manager):
-    """Dashboard profissional do GeoValida seguindo Padrão Digital de Governo."""
+    """Dashboard com visualização do pipeline de consolidação territorial."""
     
-    # Configuração da página
-    st.set_page_config(
-        page_title="GeoValida",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+    # === LOAD CONSOLIDATION CACHE ===
+    consolidation_loader = ConsolidationLoader()
     
-    # CSS customizado para Padrão Gov.br
-    st.markdown("""
-    <style>
-    /* Padrão Digital de Governo - Cores oficiais */
-    :root {
-        --primary-color: #1351B4;
-        --success-color: #168821;
-        --warning-color: #FFCD07;
-        --error-color: #E52207;
-        --info-color: #155BCB;
-        --text-color: #333333;
-        --bg-color: #FFFFFF;
-        --surface-color: #F8F8F8;
-    }
-    
-    /* Header customizado */
-    .header-title {
-        color: #1351B4;
-        font-weight: 700;
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .header-subtitle {
-        color: #333333;
-        font-size: 0.95rem;
-        font-weight: 400;
-    }
-    
-    /* Card estilizado */
-    .gov-card {
-        border-left: 4px solid #1351B4;
-        padding: 1rem;
-        background-color: #F8F8F8;
-        border-radius: 0.25rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Header com branding Gov.br
-    col1, col2 = st.columns([0.8, 0.2])
+    # === HEADER ===
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        st.markdown('<p class="header-title">GeoValida</p>', unsafe_allow_html=True)
-        st.markdown(
-            '<p class="header-subtitle">Sistema de Validação e Regionalização de Unidades de Planejamento Territorial</p>',
-            unsafe_allow_html=True
-        )
+        st.title("GeoValida - Consolidação Territorial")
+        st.markdown("Visualização da distribuição inicial e pós-consolidação de UTPs")
     
-    # Sidebar
-    selected_step = sidebar.render_sidebar(manager)
+    with col3:
+        status_class = "status-executed" if consolidation_loader.is_executed() else "status-pending"
+        status_text = "✅ Consolidado" if consolidation_loader.is_executed() else "⏳ Pendente"
+        st.markdown(f"<div class='status-badge {status_class}'>{status_text}</div>", unsafe_allow_html=True)
     
-    # Métricas no topo
-    st.divider()
-    metrics.render_top_metrics(manager)
-    st.divider()
+    # === SIDEBAR - FILTROS & CONTROLES ===
+    with st.sidebar:
+        st.markdown("### Filtros")
+        st.markdown("---")
+        
+        # Carregar dados
+        data_loader = DataLoader()
+        df_municipios = data_loader.get_municipios_dataframe()
+        metadata = data_loader.get_metadata()
+        
+        if df_municipios.empty:
+            st.error("❌ Falha ao carregar dados.")
+            return
+        
+        # Filtro por UF
+        ufs = sorted(df_municipios['uf'].unique().tolist())
+        all_ufs = st.checkbox("🇧🇷 Brasil Completo", value=True)
+        
+        if all_ufs:
+            selected_ufs = ufs
+            st.multiselect("Estados (UF)", ufs, default=ufs, disabled=True)
+        else:
+            selected_ufs = st.multiselect("Estados (UF)", ufs, default=[])
+        
+        # Filtro por UTP
+        utps_list = sorted(df_municipios['utp_id'].unique().tolist())
+        all_utps = st.checkbox("Todas as UTPs", value=False)
+        
+        if all_utps:
+            selected_utps = utps_list
+            st.multiselect("UTPs", utps_list, default=utps_list, disabled=True)
+        else:
+            selected_utps = st.multiselect("UTPs", utps_list, default=[])
+        
+        st.markdown("---")
+        st.caption(f"📊 Dados de: {metadata.get('timestamp', 'N/A')[:10]}")
+        
+        # === SEÇÃO DE CONSOLIDAÇÃO ===
+        st.markdown("---")
+        st.markdown("### ⚙️ Consolidação")
+        
+        if consolidation_loader.is_executed():
+            summary = consolidation_loader.get_summary()
+            
+            # Verifica se houve mudanças ou não
+            if summary['total_consolidations'] > 0:
+                st.success("✅ Consolidação em cache")
+                st.metric("Consolidações", summary['total_consolidations'])
+                st.metric("UTPs Reduzidas", f"{summary['unique_sources']} → {summary['unique_targets']}")
+            else:
+                st.info("ℹ️ Consolidação executada - nenhuma mudança necessária")
+                st.caption("Todos os municípios já estão corretamente organizados.")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Atualizar", use_container_width=True):
+                    st.info("ℹ️ Para atualizar, execute a consolidação novamente via código.")
+            
+            with col2:
+                if st.button("🗑️ Limpar", use_container_width=True):
+                    consolidation_loader.clear()
+                    st.rerun()
+        else:
+            st.warning("⏳ Nenhuma consolidação em cache")
+            st.info("Execute a consolidação para preencher o cache.")
     
-    # Layout principal: 2 colunas (Conteúdo + Mapa)
-    col_content, col_map = st.columns([0.4, 0.6])
+    # Aplicar filtros
+    df_filtered = df_municipios[df_municipios['uf'].isin(selected_ufs)].copy()
+    if selected_utps:
+        df_filtered = df_filtered[df_filtered['utp_id'].isin(selected_utps)]
     
-    with col_content:
-        st.subheader("Processamento", divider="blue")
-        
-        if selected_step == "0. Carga de Dados":
-            st.write("Carregue os dados para começar a análise territorial")
-            if st.button("Carregar Dados", use_container_width=True, type="primary"):
-                with st.spinner("Carregando dados..."):
-                    if manager.step_0_initialize_data():
-                        st.success("Dados carregados com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("Erro ao carregar dados")
-        
-        elif selected_step == "1. Mapa Inicial":
-            st.write("Visualizando a situação inicial das Unidades de Planejamento Territorial")
-            st.info("Total de 5.573 municípios em 747 UTPs")
-        
-        elif selected_step == "2. Análise de Fluxos":
-            st.write("Análise da Matriz Origem-Destino de transporte")
-            if st.button("Analisar Fluxos", use_container_width=True, type="primary"):
-                with st.spinner("Processando fluxos..."):
-                    df_flows = manager.step_2_analyze_flows()
-                    if df_flows is not None and not df_flows.empty:
-                        st.dataframe(df_flows, use_container_width=True)
-                    else:
-                        st.info("Nenhum fluxo detectado nos dados")
-        
-        elif selected_step == "5. Consolidação Funcional":
-            st.write("Consolidação de UTPs baseada em fluxos de transporte")
-            if st.button("Executar Consolidação", use_container_width=True, type="primary"):
-                with st.spinner("Processando consolidação funcional..."):
-                    changes = manager.step_5_consolidate_functional()
-                    st.success(f"Consolidação concluída: {changes} uniões realizadas")
-        
-        elif selected_step == "7. Limpeza Territorial":
-            st.write("Consolidação final via REGIC + Adjacência Geográfica")
-            if st.button("Executar Limpeza", use_container_width=True, type="primary"):
-                with st.spinner("Processando limpeza territorial..."):
-                    changes = manager.step_7_territorial_cleanup()
-                    st.success(f"Limpeza concluída: {changes} consolidações realizadas")
-        
-        st.divider()
-        st.subheader("Exportação", divider="blue")
-        
-        col_export1, col_export2 = st.columns(2)
-        with col_export1:
-            if st.button("Exportar CSV", use_container_width=True):
-                st.info("Função em desenvolvimento")
-        with col_export2:
-            if st.button("Exportar Mapa", use_container_width=True):
-                st.info("Função em desenvolvimento")
+    # Carregar shapefile
+    shapefile_path = Path(__file__).parent.parent.parent / "data" / "01_raw" / "shapefiles" / "BR_Municipios_2024.shp"
+    gdf = get_geodataframe(shapefile_path, df_municipios)
     
-    with col_map:
-        st.subheader("Visualização Espacial", divider="blue")
-        map_viewer.render_maps(selected_step, manager)
+    # === TABS ===
+    tab1, tab2 = st.tabs([
+        "Distribuição Inicial",
+        "Pós-Consolidação"
+    ])
+    
+    # ==== TAB 1: DISTRIBUIÇÃO INICIAL ====
+    with tab1:
+        st.markdown("### <span class='step-badge step-initial'>INICIAL</span> Situação Atual", unsafe_allow_html=True)
+        st.markdown("Mapa da distribuição atual das UTPs antes da consolidação.")
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📍 Municípios", len(df_filtered), f"{len(df_municipios)} total")
+        with col2:
+            st.metric("🔷 UTPs", len(df_filtered['utp_id'].unique()), f"{len(utps_list)} total")
+        with col3:
+            st.metric("🌐 Estados", len(df_filtered['uf'].unique()), f"{len(ufs)} total")
+        
+        st.markdown("---")
+        st.markdown("#### Mapa Interativo")
+        
+        if gdf is not None:
+            gdf_filtered = gdf[gdf['uf'].isin(selected_ufs)].copy()
+            if selected_utps:
+                gdf_filtered = gdf_filtered[gdf_filtered['utp_id'].isin(selected_utps)]
+            
+            st.subheader(f"🗺️ {len(selected_ufs)} Estado(s) | {len(gdf_filtered)} Municípios")
+            render_map(gdf_filtered, title="Distribuição Inicial")
+        
+        st.markdown("---")
+        st.markdown("#### Composição das UTPs")
+        
+        utp_summary = df_filtered.groupby('utp_id').agg({
+            'nm_mun': 'count',
+            'sede_utp': 'sum',
+            'regiao_metropolitana': lambda x: (x.notna() & (x != '')).sum()
+        }).rename(columns={
+            'nm_mun': 'Municípios',
+            'sede_utp': 'Sedes',
+            'regiao_metropolitana': 'Com RM'
+        }).sort_values('Municípios', ascending=False).head(15)
+        
+        st.dataframe(utp_summary, use_container_width=True)
+    
+    # ==== TAB 2: PÓS-CONSOLIDAÇÃO ====
+    with tab2:
+        st.markdown("### <span class='step-badge step-final'>FINAL</span> Após Consolidação", unsafe_allow_html=True)
+        st.markdown("Mapa da distribuição após consolidação de UTPs unitárias e limpeza territorial.")
+        st.markdown("---")
+        
+        if consolidation_loader.is_executed():
+            consolidations = consolidation_loader.get_consolidations()
+            stats_summary = consolidation_loader.get_summary()
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("🔗 Consolidações", stats_summary['total_consolidations'])
+            with col2:
+                st.metric("📊 UTPs Reduzidas", f"{stats_summary['unique_sources']} → {stats_summary['unique_targets']}")
+            with col3:
+                reduction = (stats_summary['unique_sources'] - stats_summary['unique_targets']) / stats_summary['unique_sources'] * 100
+                st.metric("% Redução", f"{reduction:.1f}%")
+            
+            st.markdown("---")
+            st.markdown("#### Mapa Pós-Consolidação")
+            
+            # Aplicar consolidações ao dataframe
+            df_consolidated = consolidation_loader.apply_consolidations_to_dataframe(df_filtered)
+            
+            if gdf is not None:
+                gdf_consolidated = consolidation_loader.apply_consolidations_to_dataframe(
+                    gdf[gdf['uf'].isin(selected_ufs)].copy()
+                )
+                
+                if selected_utps:
+                    target_utps = set(c['target_utp'] for c in consolidations)
+                    gdf_consolidated = gdf_consolidated[
+                        gdf_consolidated['utp_id'].isin(target_utps | set(selected_utps))
+                    ]
+                
+                st.subheader(f"🗺️ {len(selected_ufs)} Estado(s) | {len(gdf_consolidated)} Municípios")
+                render_map(gdf_consolidated, title="Distribuição Consolidada")
+            
+            st.markdown("---")
+            st.markdown("#### Registro de Consolidações")
+            
+            # Preparar dados para planilha
+            df_consolidations = consolidation_loader.export_as_dataframe()
+            st.dataframe(df_consolidations, use_container_width=True, hide_index=True)
+            
+            # Download do resultado
+            result_json = json.dumps(consolidation_loader.result, ensure_ascii=False, indent=2)
+            st.download_button(
+                label="📥 Baixar Resultado de Consolidação",
+                data=result_json,
+                file_name=f"consolidation_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+        
+        else:
+            st.info("ℹ️ Nenhuma consolidação em cache ainda.")
+            st.markdown("""
+            ### Como usar:
+            
+            1. **Execute a consolidação** via seu código (etapas 0-7)
+            2. **O arquivo `consolidation_result.json` será criado** em `data/`
+            3. **Recarregue o dashboard** (F5 ou refresh)
+            4. Os mapas comparativos aparecerão automaticamente
+            
+            O cache permanecerá enquanto você não clicar em 🗑️ "Limpar" na sidebar.
+            """)
+    
+    # === FOOTER ===
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #666; font-size: 0.9rem; margin-top: 2rem;'>
+        <p><strong>GeoValida</strong> • Consolidação Territorial de UTPs</p>
+        <p>Laboratório de Transportes • UFSC</p>
+        <p style='font-size: 0.8rem; color: #999;'>💾 Cache de consolidação em: <code>data/consolidation_result.json</code></p>
+    </div>
+    """, unsafe_allow_html=True)

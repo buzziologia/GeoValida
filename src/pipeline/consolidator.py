@@ -3,6 +3,8 @@ import logging
 import pandas as pd
 import geopandas as gpd
 from src.core.validator import TerritorialValidator
+from src.interface.consolidation_manager import ConsolidationManager
+from typing import Any
 
 
 class UTPConsolidator:
@@ -10,31 +12,385 @@ class UTPConsolidator:
         self.graph = graph
         self.validator = validator
         self.logger = logging.getLogger("GeoValida.Consolidator")
+        self.consolidation_manager = ConsolidationManager()
 
-    def run_functional_merging(self, flow_df: pd.DataFrame) -> int:
-        """Passo 5: Consolidação baseada em Fluxo de Viagens."""
-        self.logger.info("Executando consolidação funcional...")
-        total_changes = 0
+    def run_functional_merging(self, flow_df: pd.DataFrame, gdf: gpd.GeoDataFrame, map_gen: Any) -> int:
+        """
+        Passo 5: Consolidação recursiva de UTPs unitárias com fluxo e adjacência geográfica.
+        Prioriza UTPs "Sem RM" com lógica de busca em largura por fluxo total de UTP.
+        """
+        self.logger.info("Passo 5: Iniciando consolidação funcional recursiva...")
         
-        # Placeholder: lógica de consolidação funcional
-        # Percorre UTPs unitárias e busca destino principal via fluxos
+        # Limpa o log de consolidação para esta nova execução
+        self.consolidation_manager.clear_log()
+        self.logger.info("Log de consolidação limpo para nova execução.")
+        
         if flow_df is None or flow_df.empty:
             self.logger.info("Sem dados de fluxo para consolidação funcional.")
             return 0
         
+        if gdf is None or gdf.empty:
+            self.logger.info("Sem dados geográficos para consolidação funcional.")
+            return 0
+        
+        # Contagem inicial de UTPs unitárias para estatísticas
+        utps_unitarias_inicial = len(self._get_unitary_non_rm_utps())
+        utp_nodes = [n for n, d in self.graph.hierarchy.nodes(data=True) if d.get('type') == 'utp']
+        utps_unitarias_com_rm = len([n for n in utp_nodes 
+                                      if len(list(self.graph.hierarchy.successors(n))) == 1 
+                                      and not self.validator.is_non_rm_utp(n.replace("UTP_", ""))])
+        
+        self.logger.info(f"Estado Inicial: {utps_unitarias_com_rm} UTPs unitárias Com RM, {utps_unitarias_inicial} Sem RM")
+        
+        # Etapa 1: Consolidação de UTPs Com RM (Com Restrição)
+        self.logger.info("--- Etapa 5.1: Consolidando UTPs unitárias COM RM ---")
+        changes_com_rm = self._consolidate_with_rm(flow_df, gdf, map_gen)
+        
+        # Etapa 2: Consolidação recursiva de UTPs Sem RM (Sem Restrição)
+        self.logger.info("--- Etapa 5.2: Consolidando UTPs unitárias SEM RM (Recursivo) ---")
+        changes_sem_rm = self._consolidate_without_rm_recursive(flow_df, gdf, map_gen)
+        
+        total_changes = changes_com_rm + changes_sem_rm
         self.logger.info(f"Passo 5 concluído: {total_changes} consolidações realizadas.")
         return total_changes
 
-    def run_territorial_regic(self, gdf: gpd.GeoDataFrame, map_gen) -> int:
-        """Passo 7: Limpeza de unitárias usando REGIC + Envolvência (Métrica)."""
-        self.logger.info("Executando limpeza territorial via REGIC...")
-        total_changes = 0
+    def _consolidate_with_rm(self, flow_df: pd.DataFrame, gdf: gpd.GeoDataFrame, map_gen: Any) -> int:
+        """Consolida UTPs unitárias que pertencem a alguma RM.
         
-        # Placeholder: lógica de consolidação REGIC + adjacência
-        # Usa CRS EPSG:5880 para medições de comprimento de fronteira
+        Calcula dinamicamente:
+        - UTP de destino a partir do município de destino com maior fluxo
+        - Validação de RM (origem e destino devem estar na mesma RM)
+        - Flag de mesma UTP (ignora se já está na UTP correta)
+        """
+        changes = 0
+        
+        # Identifica UTPs unitárias Com RM
+        utp_nodes = [n for n, d in self.graph.hierarchy.nodes(data=True) if d.get('type') == 'utp']
+        
+        for utp_node in utp_nodes:
+            filhos = list(self.graph.hierarchy.successors(utp_node))
+            if len(filhos) != 1:
+                continue
+            
+            mun_id = filhos[0]
+            utp_origem = utp_node.replace("UTP_", "")
+            
+            # Só processa UTPs Com RM nesta etapa
+            if self.validator.is_non_rm_utp(utp_origem):
+                continue
+            
+            # Busca fluxos deste município (mun_origem pode ser int ou str)
+            fluxos_mun = flow_df[flow_df['mun_origem'].astype(int) == int(mun_id)]
+            if fluxos_mun.empty:
+                self.logger.debug(f"Mun {mun_id} (UTP {utp_origem}): Sem dados de fluxo.")
+                continue
+            
+            # Ordena por viagens e pega o destino principal
+            top_destino = fluxos_mun.nlargest(1, 'viagens').iloc[0]
+            mun_destino = int(top_destino['mun_destino'])
+            viagens = float(top_destino['viagens'])
+            
+            # CÁLCULO DINÂMICO: Identifica UTP do município de destino
+            utp_destino = self.graph.get_municipality_utp(mun_destino)
+            
+            if utp_destino == "NAO_ENCONTRADO" or utp_destino == "SEM_UTP":
+                self.logger.debug(f"Mun {mun_id}: Destino {mun_destino} não está no grafo.")
+                continue
+            
+            # FILTRO 1: Não consolidar para si mesmo (MESMA_UTP)
+            if utp_origem == utp_destino:
+                self.logger.debug(f"Mun {mun_id}: Já está na UTP correta ({utp_origem}).")
+                continue
+            
+            # FILTRO 2: Validação de RM (não cruzar RM diferente)
+            rm_origem = self.validator.get_rm_of_utp(utp_origem)
+            rm_destino = self.validator.get_rm_of_utp(utp_destino)
+            
+            if rm_origem != rm_destino:
+                self.logger.debug(f"Bloqueio RM: Mun {mun_id} tentou ir de {rm_origem} para {rm_destino}.")
+                continue
+            
+            # FILTRO 3: Validação geográfica (deve tocar algum município da UTP alvo)
+            if self.validator.is_adjacent_to_any_in_utp(mun_id, utp_destino, gdf):
+                nm_mun = self.graph.hierarchy.nodes.get(mun_id, {}).get('name', str(mun_id))
+                self.logger.info(f"✅ MOVENDO (Com RM): {nm_mun} ({mun_id}) -> UTP {utp_destino} (Fluxo: {viagens:.0f})")
+                self.graph.move_municipality(mun_id, utp_destino)
+                
+                # Registrar consolidação com detalhes completos
+                self.consolidation_manager.add_consolidation(
+                    source_utp=utp_origem,
+                    target_utp=utp_destino,
+                    reason="Com RM - Fluxo Principal",
+                    details={
+                        "mun_id": mun_id, 
+                        "nm_mun": nm_mun,
+                        "mun_destino": mun_destino,
+                        "viagens": viagens,
+                        "rm": rm_origem
+                    }
+                )
+                changes += 1
+            else:
+                self.logger.warning(f"Bloqueio Geo: Mun {mun_id} não toca UTP {utp_destino}.")
+        
+        return changes
+
+    def _consolidate_without_rm_recursive(self, flow_df: pd.DataFrame, gdf: gpd.GeoDataFrame, map_gen: Any) -> int:
+        """
+        Consolida recursivamente UTPs unitárias Sem RM usando BFS com fluxo total de UTP.
+        Até que não haja mais UTPs unitárias Sem RM.
+        """
+        total_changes = 0
+        iteration = 1
+        
+        while True:
+            # Identifica UTPs unitárias Sem RM no estado ATUAL do grafo
+            unitarias_sem_rm = self._get_unitary_non_rm_utps()
+            
+            self.logger.info(f"--- Iteração {iteration} | Unitárias Sem RM: {len(unitarias_sem_rm)} ---")
+            
+            if not unitarias_sem_rm:
+                self.logger.info("Sucesso: Nenhuma UTP unitária Sem RM restante.")
+                break
+            
+            # Sincroniza mapa para ver as fronteiras atualizadas
+            if hasattr(map_gen, 'sync_with_graph'):
+                map_gen.sync_with_graph(self.graph)
+            
+            possible_moves = []
+            
+            for utp_id in unitarias_sem_rm:
+                muns = list(self.graph.hierarchy.successors(f"UTP_{utp_id}"))
+                if not muns:
+                    continue
+                
+                mun_id = muns[0]
+                nm_mun = self.graph.hierarchy.nodes.get(mun_id, {}).get('name', str(mun_id))
+                
+                # Busca vizinhos geográficos
+                todos_vizinhos = self.validator.get_neighboring_utps(mun_id, gdf)
+                
+                # Filtra para candidatos Sem RM
+                candidates = [v for v in todos_vizinhos if v != utp_id and self.validator.is_non_rm_utp(v)]
+                
+                self.logger.info(f"Analisando: {nm_mun} ({mun_id}) na UTP {utp_id}")
+                
+                if not todos_vizinhos:
+                    self.logger.warning(f"  [REJEITADO]: Isolado geograficamente.")
+                    continue
+                
+                if not candidates:
+                    rm_vizinhos = [v for v in todos_vizinhos if not self.validator.is_non_rm_utp(v)]
+                    self.logger.warning(f"  [REJEITADO]: Vizinhos {rm_vizinhos} são Com RM (filtrado).")
+                    continue
+                
+                # Busca o alvo com maior fluxo total para UTP
+                best_target, max_flow = None, -1
+                
+                self.logger.info(f"  Candidatos Sem RM: {candidates}")
+                
+                for v_id in candidates:
+                    # Soma fluxo para TODOS os municípios da UTP alvo
+                    muns_target = list(self.graph.hierarchy.successors(f"UTP_{v_id}"))
+                    
+                    flow = flow_df[
+                        (flow_df['mun_origem'].astype(int) == int(mun_id)) & 
+                        (flow_df['mun_destino'].astype(int).isin([int(m) for m in muns_target]))
+                    ]['viagens'].sum()
+                    
+                    self.logger.info(f"    -> Fluxo para UTP {v_id}: {flow:.2f} viagens")
+                    
+                    if flow > max_flow:
+                        max_flow, best_target = flow, v_id
+                
+                if best_target and max_flow > 0:
+                    possible_moves.append({
+                        'mun_id': mun_id,
+                        'origin_utp': utp_id,
+                        'target_utp': best_target,
+                        'flow': max_flow,
+                        'nm_mun': nm_mun
+                    })
+                else:
+                    self.logger.warning(f"  [REJEITADO]: Fluxo zero para todos os candidatos.")
+            
+            if not possible_moves:
+                self.logger.warning(f"Fim: {len(unitarias_sem_rm)} UTPs isoladas por falta de fluxo.")
+                break
+            
+            # Ordena por fluxo descrescente e aplica
+            possible_moves.sort(key=lambda x: x['flow'], reverse=True)
+            changes_in_round = 0
+            consumed = set()
+            
+            for move in possible_moves:
+                # Evita conflitos de dependência na mesma iteração
+                if move['target_utp'] in consumed or move['origin_utp'] in consumed:
+                    continue
+                
+                self.logger.info(f"✅ MOVENDO (Sem RM): {move['nm_mun']} -> UTP {move['target_utp']} (Fluxo: {move['flow']:.2f})")
+                self.graph.move_municipality(move['mun_id'], move['target_utp'])
+                
+                # Registrar consolidação
+                self.consolidation_manager.add_consolidation(
+                    source_utp=move['origin_utp'],
+                    target_utp=move['target_utp'],
+                    reason="Sem RM - Fluxo Total BFS",
+                    details={"mun_id": move['mun_id'], "nm_mun": move['nm_mun'], "flow": move['flow']}
+                )
+                
+                consumed.add(move['origin_utp'])
+                changes_in_round += 1
+            
+            if changes_in_round == 0:
+                self.logger.warning("Conflito: Nenhum movimento aplicado. Finalizando iteração.")
+                break
+            
+            total_changes += changes_in_round
+            iteration += 1
+        
+        return total_changes
+
+    def run_territorial_regic(self, gdf: gpd.GeoDataFrame, map_gen: Any) -> int:
+        """
+        Passo 7: Consolidação de último recurso usando REGIC (Hierarquia Urbana) + 
+        Critérios geográficos (Distância + Fronteira Partilhada em EPSG:5880).
+        """
+        self.logger.info("Passo 7: Iniciando consolidação territorial (REGIC + Geografia)...")
+        
         if gdf is None or gdf.empty:
             self.logger.info("Sem dados geográficos para limpeza territorial.")
             return 0
         
+        total_changes = 0
+        iteration = 1
+        
+        while True:
+            # Identifica UTPs unitárias Sem RM restantes
+            unitarias_sem_rm = self._get_unitary_non_rm_utps()
+            
+            self.logger.info(f"--- Iteração {iteration} | Unitárias restantes: {len(unitarias_sem_rm)} ---")
+            
+            if not unitarias_sem_rm:
+                self.logger.info("Sucesso: Todas as UTPs unitárias foram resolvidas.")
+                break
+            
+            # Sincroniza geometrias para capturar novas fronteiras
+            if hasattr(map_gen, 'sync_with_graph'):
+                map_gen.sync_with_graph(self.graph)
+            
+            # Converte para CRS projetado para medições em metros
+            gdf_projected = gdf.to_crs(epsg=5880)
+            
+            possible_moves = []
+            
+            for utp_id in unitarias_sem_rm:
+                muns_origem = list(self.graph.hierarchy.successors(f"UTP_{utp_id}"))
+                if not muns_origem:
+                    continue
+                
+                mun_id = muns_origem[0]
+                nm_mun = self.graph.hierarchy.nodes.get(mun_id, {}).get('name', str(mun_id))
+                
+                # Busca vizinhos geográficos
+                candidates = self.validator.get_neighboring_utps(mun_id, gdf)
+                candidates = [v for v in candidates if v != utp_id and self.validator.is_non_rm_utp(v)]
+                
+                scored_candidates = []
+                
+                # Centroide do município (em metros, EPSG:5880)
+                mun_row = gdf_projected[gdf_projected['CD_MUN'] == mun_id]
+                if mun_row.empty:
+                    continue
+                mun_centroid = mun_row.geometry.centroid.values[0]
+                
+                for v_id in candidates:
+                    # Critério 1: Ranking REGIC (hierarquia urbana)
+                    sede_v = self.graph.utp_seeds.get(v_id) if hasattr(self.graph, 'utp_seeds') else None
+                    regic_rank = self.validator.get_regic_score(sede_v) if sede_v else 999
+                    
+                    # Critério 2: Distância Euclidiana (em metros)
+                    sede_row = gdf_projected[gdf_projected['CD_MUN'] == sede_v] if sede_v else None
+                    if sede_row is None or sede_row.empty:
+                        dist = float('inf')
+                    else:
+                        sede_geom = sede_row.geometry.centroid.values[0]
+                        dist = mun_centroid.distance(sede_geom)
+                    
+                    # Critério 3: Comprimento de fronteira partilhada
+                    shared_len = self.validator.get_shared_boundary_length(mun_id, v_id, gdf_projected)
+                    
+                    scored_candidates.append({
+                        'utp_id': v_id,
+                        'regic': regic_rank,
+                        'dist': dist,
+                        'boundary': shared_len
+                    })
+                
+                # Ordenação multicritério: Melhor REGIC > Menor Distância > Maior Fronteira
+                if scored_candidates:
+                    scored_candidates.sort(key=lambda x: (x['regic'], x['dist'], -x['boundary']))
+                    best = scored_candidates[0]
+                    
+                    possible_moves.append({
+                        'mun_id': mun_id,
+                        'origin_utp': utp_id,
+                        'target_utp': best['utp_id'],
+                        'nm_mun': nm_mun,
+                        'rank': best['regic']
+                    })
+            
+            if not possible_moves:
+                self.logger.warning(f"Atenção: {len(unitarias_sem_rm)} UTPs unitárias permanecem isoladas.")
+                break
+            
+            # Ordena por REGIC e aplica mudanças
+            possible_moves.sort(key=lambda x: x['rank'])
+            changes_in_round = 0
+            consumed = set()
+            
+            for move in possible_moves:
+                if move['target_utp'] in consumed or move['origin_utp'] in consumed:
+                    continue
+                
+                self.logger.info(f"✅ MOVENDO (REGIC): {move['nm_mun']} -> UTP {move['target_utp']}")
+                self.graph.move_municipality(move['mun_id'], move['target_utp'])
+                
+                # Registrar consolidação
+                self.consolidation_manager.add_consolidation(
+                    source_utp=move['origin_utp'],
+                    target_utp=move['target_utp'],
+                    reason="Sem RM - REGIC + Geografia",
+                    details={"mun_id": move['mun_id'], "nm_mun": move['nm_mun'], "regic_rank": move['rank']}
+                )
+                
+                consumed.add(move['origin_utp'])
+                changes_in_round += 1
+            
+            if changes_in_round == 0:
+                break
+            
+            total_changes += changes_in_round
+            iteration += 1
+        
         self.logger.info(f"Passo 7 concluído: {total_changes} consolidações realizadas.")
         return total_changes
+
+    def _get_unitary_non_rm_utps(self) -> list:
+        """Retorna lista de UTPs unitárias (1 município) que são Sem RM."""
+        unitarias = []
+        
+        utp_nodes = [n for n, d in self.graph.hierarchy.nodes(data=True) if d.get('type') == 'utp']
+        
+        for utp_node in utp_nodes:
+            filhos = list(self.graph.hierarchy.successors(utp_node))
+            
+            # UTP unitária: tem exatamente 1 filho
+            if len(filhos) == 1:
+                utp_id = utp_node.replace("UTP_", "")
+                
+                # Verifica se é Sem RM
+                if self.validator.is_non_rm_utp(utp_id):
+                    unitarias.append(utp_id)
+        
+        return unitarias
