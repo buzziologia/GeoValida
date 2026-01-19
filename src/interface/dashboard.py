@@ -985,16 +985,43 @@ def render_dashboard(manager):
         st.markdown("Análise sede-a-sede para identificar hierarquias e dependências entre UTPs usando dados socioeconômicos e fluxos.")
         st.markdown("---")
         
-        # Inicializar analisador com cache
-        @st.cache_data(show_spinner="Analisando dependências entre sedes...", hash_funcs={pd.DataFrame: id})
-        def run_sede_analysis():
+        # Carregar análise de dependências do cache JSON
+        @st.cache_data(show_spinner="Carregando análise de dependências...", hash_funcs={pd.DataFrame: id})
+        def load_sede_analysis_from_cache():
             """
-            Executa análise de dependências e retorna resultados.
+            Carrega análise de dependências do JSON pré-processado.
             
-            IMPORTANTE: A análise é feita sobre a configuração territorial APÓS consolidação,
-            se houver consolidações em cache. Caso contrário, usa a configuração inicial.
+            Este método carrega resultados da análise que foram salvos quando o pipeline
+            foi executado, resultando em carregamento ~100x mais rápido que recalcular.
+            
+            Se o cache não existir, executa a análise como fallback.
             """
-            # Passar consolidation_loader para usar dados consolidados
+            cache_file = Path(__file__).parent.parent.parent / "data" / "sede_analysis_cache.json"
+            
+            # Tentar carregar do cache
+            if cache_file.exists():
+                try:
+                    import json
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    # Reconstruir DataFrame do JSON
+                    df_raw = pd.DataFrame(data['sede_analysis'])
+                    
+                    # Criar SedeAnalyzer temporário apenas para formatar tabela
+                    analyzer = SedeAnalyzer()
+                    analyzer.df_sede_analysis = df_raw
+                    df_display = analyzer.export_sede_comparison_table()
+                    
+                    logging.info(f"✅ Análise carregada do cache: {len(df_raw)} sedes")
+                    
+                    return data['summary'], df_display, df_raw
+                    
+                except Exception as e:
+                    logging.warning(f"⚠️ Erro ao carregar cache, executando análise: {e}")
+            
+            # Fallback: executar análise se cache não existir
+            logging.info("ℹ️ Cache não encontrado, executando análise...")
             analyzer = SedeAnalyzer(consolidation_loader=consolidation_loader)
             summary = analyzer.analyze_sede_dependencies()
             
@@ -1004,9 +1031,9 @@ def render_dashboard(manager):
             else:
                 return summary, pd.DataFrame(), pd.DataFrame()
         
-        # Executar análise
+        # Carregar análise (do cache ou executar fallback)
         try:
-            summary, df_display, df_raw = run_sede_analysis()
+            summary, df_display, df_raw = load_sede_analysis_from_cache()
             
             if summary.get('success'):
                 # === MÉTRICAS GERAIS ===
@@ -1041,47 +1068,88 @@ def render_dashboard(manager):
                 st.markdown("#### Tabela Comparativa de Sedes")
                 
                 # Filtros acima da tabela
-                col_filter1, col_filter2, col_filter3 = st.columns(3)
+                col_filter1, col_filter2, col_filter3, col_filter4 = st.columns(4)
                 
                 with col_filter1:
-                    show_alerts_only = st.checkbox("Apenas Alertas", value=False)
+                    # Seletor de modo de visualização
+                    view_mode = st.radio(
+                        "Modo de Visualização",
+                        ["Individual", "Origem-Destino"],
+                        help="Individual: uma linha por sede. Origem-Destino: pares comparativos lado a lado"
+                    )
                 
                 with col_filter2:
+                    show_alerts_only = st.checkbox("Apenas Alertas", value=False)
+                
+                with col_filter3:
                     # Filtro por REGIC
                     regic_options = ['Todos'] + sorted(df_raw[df_raw['regic'] != '']['regic'].unique().tolist())
                     selected_regic = st.selectbox("Filtrar por REGIC", regic_options)
                 
-                with col_filter3:
+                with col_filter4:
                     # Filtro por aeroporto
                     filter_airport = st.selectbox("Filtrar Aeroporto", ["Todos", "Apenas com aeroporto", "Sem aeroporto"])
                 
-                # Aplicar filtros ao dataframe
-                df_filtered_display = df_display.copy()
-                df_filtered_raw = df_raw.copy()
-                
-                if selected_regic != 'Todos':
-                    mask = df_raw['regic'] == selected_regic
-                    df_filtered_display = df_display[mask]
-                    df_filtered_raw = df_raw[mask]
-                
-                if filter_airport == "Apenas com aeroporto":
-                    mask = df_display['Aeroporto'] == 'Sim'
-                    df_filtered_display = df_filtered_display[mask]
-                    df_filtered_raw = df_filtered_raw[df_raw['tem_aeroporto'] == True]
-                elif filter_airport == "Sem aeroporto":
-                    mask = df_display['Aeroporto'] == ''
-                    df_filtered_display = df_filtered_display[mask]
-                    df_filtered_raw = df_filtered_raw[df_raw['tem_aeroporto'] == False]
-                
-                # Renderizar tabela
-                sede_comparison.render_sede_table(df_filtered_display, show_alerts_only)
+                # Renderizar tabela conforme modo selecionado
+                if view_mode == "Origem-Destino":
+                    # Gerar dados origem-destino
+                    analyzer = SedeAnalyzer(consolidation_loader=consolidation_loader)
+                    # Reutilizar análise já feita
+                    analyzer.df_sede_analysis = df_raw
+                    df_origin_dest = analyzer.export_origin_destination_comparison()
+                    
+                    # Aplicar filtros ao dataframe origem-destino
+                    df_filtered_od = df_origin_dest.copy()
+                    
+                    if selected_regic != 'Todos':
+                        # Filtrar por REGIC de origem OU destino
+                        mask = (df_filtered_od['Origem_REGIC'] == selected_regic) | (df_filtered_od['Destino_REGIC'] == selected_regic)
+                        df_filtered_od = df_filtered_od[mask]
+                    
+                    if filter_airport == "Apenas com aeroporto":
+                        # Filtrar onde origem OU destino tem aeroporto
+                        mask = (df_filtered_od['Origem_Aeroporto'] == 'Sim') | (df_filtered_od['Destino_Aeroporto'] == 'Sim')
+                        df_filtered_od = df_filtered_od[mask]
+                    elif filter_airport == "Sem aeroporto":
+                        # Filtrar onde AMBOS não têm aeroporto
+                        mask = (df_filtered_od['Origem_Aeroporto'] == '') & (df_filtered_od['Destino_Aeroporto'] == '')
+                        df_filtered_od = df_filtered_od[mask]
+                    
+                    # Renderizar tabela origem-destino
+                    sede_comparison.render_origin_destination_table(df_filtered_od, show_alerts_only)
+                    
+                    # Usar df_display original para gráficos (não filtramos no modo origem-destino)
+                    df_filtered_display = df_display.copy()
+                    
+                else:
+                    # Modo Individual (atual)
+                    # Aplicar filtros ao dataframe
+                    df_filtered_display = df_display.copy()
+                    df_filtered_raw = df_raw.copy()
+                    
+                    if selected_regic != 'Todos':
+                        mask = df_raw['regic'] == selected_regic
+                        df_filtered_display = df_display[mask]
+                        df_filtered_raw = df_raw[mask]
+                    
+                    if filter_airport == "Apenas com aeroporto":
+                        mask = df_display['Aeroporto'] == 'Sim'
+                        df_filtered_display = df_filtered_display[mask]
+                        df_filtered_raw = df_filtered_raw[df_raw['tem_aeroporto'] == True]
+                    elif filter_airport == "Sem aeroporto":
+                        mask = df_display['Aeroporto'] == ''
+                        df_filtered_display = df_filtered_display[mask]
+                        df_filtered_raw = df_filtered_raw[df_raw['tem_aeroporto'] == False]
+                    
+                    # Renderizar tabela individual
+                    sede_comparison.render_sede_table(df_filtered_display, show_alerts_only)
                 
                 st.markdown("---")
                 
                 # === VISUALIZAÇÕES ===
                 st.markdown("#### Análises Visuais")
                 
-                # Gráficos socioeconômicos
+                # Gráficos socioeconômicos (usa dados filtrados)
                 sede_comparison.render_socioeconomic_charts(df_filtered_display)
                 
                 st.markdown("---")

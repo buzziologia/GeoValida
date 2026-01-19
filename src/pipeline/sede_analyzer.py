@@ -469,3 +469,175 @@ class SedeAnalyzer:
         df_display['Alerta'] = df_display['Alerta'].map({True: 'SIM', False: ''})
         
         return df_display
+    
+    def export_origin_destination_comparison(self) -> pd.DataFrame:
+        """
+        Exporta tabela comparativa no formato origem-destino.
+        
+        Para cada sede que tem fluxo principal para outra sede, cria uma linha
+        mostrando dados comparativos entre origem e destino lado a lado.
+        Colunas são organizadas para facilitar comparação visual.
+        
+        Returns:
+            DataFrame formatado com colunas origem-destino intercaladas para comparação
+        """
+        if self.df_sede_analysis is None:
+            return pd.DataFrame()
+        
+        # Filtrar apenas sedes que têm principal destino que também é sede
+        df_with_destinations = self.df_sede_analysis.copy()
+        
+        # Criar lista para armazenar comparações
+        comparisons = []
+        
+        for _, row_origem in df_with_destinations.iterrows():
+            cd_destino = row_origem['principal_destino_cd']
+            
+            # Verificar se o destino é uma sede válida
+            if pd.isna(cd_destino):
+                continue
+            
+            # Buscar dados da sede de destino
+            row_destino = df_with_destinations[
+                df_with_destinations['cd_mun_sede'] == cd_destino
+            ]
+            
+            if row_destino.empty:
+                # Destino não é uma sede, pular
+                continue
+            
+            row_destino = row_destino.iloc[0]
+            
+            # Calcular diferenças
+            delta_pop = row_destino['populacao_total_utp'] - row_origem['populacao_total_utp']
+            delta_viagens = row_destino['total_viagens'] - row_origem['total_viagens']
+            
+            # Criar linha comparativa com colunas intercaladas para facilitar comparação
+            comparison = {
+                # UTP
+                'Origem_UTP': row_origem['utp_id'],
+                'Destino_UTP': row_destino['utp_id'],
+                
+                # Sede
+                'Origem_Sede': row_origem['nm_sede'],
+                'Destino_Sede': row_destino['nm_sede'],
+                
+                # UF
+                'Origem_UF': row_origem['uf'],
+                'Destino_UF': row_destino['uf'],
+                
+                # REGIC
+                'Origem_REGIC': row_origem['regic'] if row_origem['regic'] else '-',
+                'Destino_REGIC': row_destino['regic'] if row_destino['regic'] else '-',
+                
+                # População
+                'Origem_População': int(row_origem['populacao_total_utp']),
+                'Destino_População': int(row_destino['populacao_total_utp']),
+                'Δ_População': int(delta_pop),
+                
+                # Municípios
+                'Origem_Municípios': row_origem['num_municipios'],
+                'Destino_Municípios': row_destino['num_municipios'],
+                
+                # Viagens
+                'Origem_Viagens': int(row_origem['total_viagens']),
+                'Destino_Viagens': int(row_destino['total_viagens']),
+                'Δ_Viagens': int(delta_viagens),
+                
+                # Aeroporto
+                'Origem_Aeroporto': 'Sim' if row_origem['tem_aeroporto'] else '-',
+                'Destino_Aeroporto': 'Sim' if row_destino['tem_aeroporto'] else '-',
+                
+                # ICAO
+                'Origem_ICAO': row_origem['aeroporto_icao'] if row_origem['tem_aeroporto'] and row_origem['aeroporto_icao'] else '-',
+                'Destino_ICAO': row_destino['aeroporto_icao'] if row_destino['tem_aeroporto'] and row_destino['aeroporto_icao'] else '-',
+                
+                # Turismo
+                'Origem_Turismo': row_origem['turismo'] if row_origem['turismo'] and str(row_origem['turismo']).strip() != '' else '-',
+                'Destino_Turismo': row_destino['turismo'] if row_destino['turismo'] and str(row_destino['turismo']).strip() != '' else '-',
+                
+                # Relação
+                'Fluxo_%': round(row_origem['proporcao_fluxo_principal'] * 100, 1),
+                'Tempo_h': round(row_origem['tempo_ate_destino_h'], 2) if pd.notna(row_origem['tempo_ate_destino_h']) else None,
+                'Alerta': '⚠️ SIM' if row_origem['tem_alerta_dependencia'] else '',
+                
+                # Razão populacional
+                'Razão_Pop': round(row_destino['populacao_total_utp'] / row_origem['populacao_total_utp'], 2) if row_origem['populacao_total_utp'] > 0 else 0
+            }
+            
+            comparisons.append(comparison)
+        
+        df_comparison = pd.DataFrame(comparisons)
+        
+        # Ordenar por fluxo percentual (maior dependência primeiro)
+        if not df_comparison.empty:
+            df_comparison = df_comparison.sort_values('Fluxo_%', ascending=False)
+        
+        return df_comparison
+    
+    def export_to_json(self, output_path: Path) -> bool:
+        """
+        Exporta resultados da análise para JSON persistente.
+        
+        Este método salva toda a análise de dependências em um arquivo JSON
+        para carregamento rápido pelo dashboard, evitando recalcular a cada sessão.
+        
+        Args:
+            output_path: Caminho completo para o arquivo JSON de saída
+            
+        Returns:
+            True se exportação foi bem-sucedida, False caso contrário
+        """
+        if self.df_sede_analysis is None:
+            self.logger.error("Nenhuma análise disponível para exportar. Execute analyze_sede_dependencies() primeiro.")
+            return False
+        
+        try:
+            from datetime import datetime
+            
+            # Preparar dados para serialização
+            df_export = self.df_sede_analysis.copy()
+            
+            # Converter tipos para JSON-serializáveis
+            for col in df_export.columns:
+                if df_export[col].dtype == 'object':
+                    df_export[col] = df_export[col].fillna('')
+                elif df_export[col].dtype in ['int64', 'Int64']:
+                    df_export[col] = df_export[col].fillna(0).astype(int)
+                elif df_export[col].dtype in ['float64', 'Float64']:
+                    df_export[col] = df_export[col].fillna(0.0)
+            
+            # Estrutura do JSON
+            export_data = {
+                'metadata': {
+                    'timestamp': datetime.now().isoformat(),
+                    'consolidation_applied': self.consolidation_loader is not None and self.consolidation_loader.is_executed(),
+                    'total_sedes': len(df_export),
+                    'version': '1.0'
+                },
+                'summary': {
+                    'success': True,
+                    'total_sedes': len(df_export),
+                    'total_alertas': int(df_export['tem_alerta_dependencia'].sum()),
+                    'utps_analisadas': df_export['utp_id'].nunique(),
+                    'populacao_total': int(df_export['populacao_total_utp'].sum()),
+                    'sedes_com_aeroporto': int(df_export['tem_aeroporto'].sum())
+                },
+                'sede_analysis': df_export.to_dict('records')
+            }
+            
+            # Salvar JSON
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(export_data, f, ensure_ascii=False, indent=2)
+            
+            self.logger.info(f"✅ Análise exportada para {output_path}")
+            self.logger.info(f"   📊 {len(df_export)} sedes, {export_data['summary']['total_alertas']} alertas")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"❌ Erro ao exportar análise para JSON: {e}")
+            return False

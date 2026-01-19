@@ -254,3 +254,104 @@ def render_regic_distribution(df: pd.DataFrame) -> None:
     fig_regic.update_xaxes(tickangle=45)
     
     st.plotly_chart(fig_regic, use_container_width=True)
+
+
+def render_origin_destination_table(df: pd.DataFrame, show_alerts_only: bool = False) -> None:
+    """
+    Renderiza tabela comparativa no formato origem-destino.
+    
+    Mostra dados de origem e destino lado a lado para facilitar
+    a identificação de qual sede tem mais relevância.
+    
+    Args:
+        df: DataFrame com dados origem-destino (do export_origin_destination _comparison)
+        show_alerts_only: Se True, mostra apenas pares com alerta
+    """
+    if df.empty:
+        st.info("Nenhuma relação origem-destino detectada.")
+        st.caption("Não há sedes cujo principal fluxo vai para outra sede.")
+        return
+    
+    df_display = df.copy()
+    
+    # Filtrar apenas alertas se solicitado
+    if show_alerts_only:
+        df_display = df_display[df_display['Alerta'] == 'SIM']
+        
+        if df_display.empty:
+            st.success("Nenhum alerta de dependência detectado!")
+            return
+    
+    # Exibir contagem
+    st.caption(f"**{len(df_display)} relações origem-destino** (ordenadas por % de fluxo)")
+    
+    # Configurar colunas com agrupamento visual (colunas intercaladas)
+    st.dataframe(
+        df_display,
+        width='stretch',
+        hide_index=True,
+        column_config={
+            # UTP (intercalado)
+            'Origem_UTP': st.column_config.TextColumn('🔵 UTP', width='small', help='UTP de origem'),
+            'Destino_UTP': st.column_config.TextColumn('🟢 UTP', width='small', help='UTP de destino'),
+            
+            # Sede (intercalado)
+            'Origem_Sede': st.column_config.TextColumn('🔵 Sede', width='medium', help='Sede de origem'),
+            'Destino_Sede': st.column_config.TextColumn('🟢 Sede', width='medium', help='Sede de destino'),
+            
+            # UF (intercalado)
+            'Origem_UF': st.column_config.TextColumn('🔵 UF', width='small'),
+            'Destino_UF': st.column_config.TextColumn('🟢 UF', width='small'),
+            
+            # REGIC (intercalado)
+            'Origem_REGIC': st.column_config.TextColumn('🔵 REGIC', width='small'),
+            'Destino_REGIC': st.column_config.TextColumn('🟢 REGIC', width='small'),
+            
+            # População (intercalado + delta)
+            'Origem_População': st.column_config.NumberColumn('🔵 Pop.', format='%d', help='População total da UTP de origem'),
+            'Destino_População': st.column_config.NumberColumn('🟢 Pop.', format='%d', help='População total da UTP de destino'),
+            'Δ_População': st.column_config.NumberColumn('Δ Pop.', format='%+d', help='Diferença populacional (Destino - Origem)'),
+            
+            # Municípios (intercalado)
+            'Origem_Municípios': st.column_config.NumberColumn('🔵 Mun.', width='small', help='Número de municípios'),
+            'Destino_Municípios': st.column_config.NumberColumn('🟢 Mun.', width='small', help='Número de municípios'),
+            
+            # Viagens (intercalado + delta)
+            'Origem_Viagens': st.column_config.NumberColumn('🔵 Viag.', format='%d', help='Total de viagens da UTP'),
+            'Destino_Viagens': st.column_config.NumberColumn('🟢 Viag.', format='%d', help='Total de viagens da UTP'),
+            'Δ_Viagens': st.column_config.NumberColumn('Δ Viag.', format='%+d', help='Diferença de viagens (Destino - Origem)'),
+            
+            # Aeroporto (intercalado)
+            'Origem_Aeroporto': st.column_config.TextColumn('🔵 Aero', width='small'),
+            'Destino_Aeroporto': st.column_config.TextColumn('🟢 Aero', width='small'),
+            
+            # ICAO (intercalado)
+            'Origem_ICAO': st.column_config.TextColumn('🔵 ICAO', width='small'),
+            'Destino_ICAO': st.column_config.TextColumn('🟢 ICAO', width='small'),
+            
+            # Turismo (intercalado)
+            'Origem_Turismo': st.column_config.TextColumn('🔵 Turismo', width='small'),
+            'Destino_Turismo': st.column_config.TextColumn('🟢 Turismo', width='small'),
+            
+            # Relação
+            'Fluxo_%': st.column_config.NumberColumn('📊 Fluxo (%)', format='%.1f%%', help='% do fluxo da origem que vai para o destino'),
+            'Tempo_h': st.column_config.NumberColumn('⏱️ Tempo (h)', format='%.2f', help='Tempo de viagem'),
+            'Alerta': st.column_config.TextColumn('Alerta', width='small'),
+            
+            # Razão
+            'Razão_Pop': st.column_config.NumberColumn('Razão Pop.', format='%.2fx', help='População Destino / População Origem')
+        },
+        height=600
+    )
+    
+    # Legenda explicativa
+    st.markdown("---")
+    st.markdown("""
+    **📖 Como interpretar:**
+    - 🔵 **Origem**: Sede que tem dependência (fluxo principal sai desta sede)
+    - 🟢 **Destino**: Sede que recebe o fluxo principal
+    - **Δ Positivo**: Destino é maior que origem (dependência esperada)
+    - **Δ Negativo**: Origem é maior que destino (situação atípica)
+    - **Razão \u003e 1**: Destino é mais populoso que origem
+    - **Razão \u003c 1**: Origem é mais populosa que destino
+    """)

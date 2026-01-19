@@ -93,7 +93,33 @@ def run_consolidation():
         consolidation_loader.update_from_log(consolidation_manager.log_data)
         logger.info("✅ Cache atualizado!")
         
-        # 9. Exibir resumo
+        # 9. Executar análise de dependências e cachear
+        logger.info("\n9️⃣ Executando análise de dependências...")
+        try:
+            from src.pipeline.sede_analyzer import SedeAnalyzer
+            from pathlib import Path
+            
+            # Criar analisador com dados consolidados
+            analyzer = SedeAnalyzer(consolidation_loader=consolidation_loader)
+            
+            # Executar análise
+            sede_summary = analyzer.analyze_sede_dependencies()
+            
+            if sede_summary.get('success'):
+                # Exportar para JSON
+                cache_path = Path(project_root) / "data" / "sede_analysis_cache.json"
+                if analyzer.export_to_json(cache_path):
+                    logger.info(f"✅ Análise de dependências salva em: {cache_path}")
+                    logger.info(f"   📊 {sede_summary['total_sedes']} sedes, {sede_summary['total_alertas']} alertas")
+                else:
+                    logger.warning("⚠️ Falha ao salvar análise de dependências")
+            else:
+                logger.warning(f"⚠️ Análise de dependências falhou: {sede_summary.get('error', 'Erro desconhecido')}")
+        
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao executar análise de dependências: {e}")
+        
+        # 10. Exibir resumo
         logger.info("\n" + "=" * 80)
         logger.info("RESUMO DA EXECUÇÃO")
         logger.info("=" * 80)
