@@ -105,6 +105,35 @@ def get_geodataframe(shapefile_path, df_municipios):
         return None
 
 
+@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id})
+def get_rm_geodataframe(shapefile_path):
+    """Carrega e processa o shapefile de Regiões Metropolitanas com cache."""
+    if not shapefile_path.exists():
+        return None
+    
+    try:
+        gdf_rm = gpd.read_file(shapefile_path)
+        
+        # Reprojetar para WGS84 (EPSG:4326) se necessário
+        if gdf_rm.crs and gdf_rm.crs.to_epsg() != 4326:
+            gdf_rm = gdf_rm.to_crs(epsg=4326)
+        
+        # Simplificar geometria para melhor performance
+        gdf_rm['geometry'] = gdf_rm.geometry.simplify(tolerance=0.005, preserve_topology=True)
+        
+        # Manter apenas colunas essenciais
+        cols_to_keep = ['NOME', 'UF_SIGLA', 'MUNICIPIO', 'AREA_KM2', 'POP_2010', 
+                       'POLO', 'POLO_POP', 'geometry']
+        existing_cols = [c for c in cols_to_keep if c in gdf_rm.columns]
+        gdf_rm = gdf_rm[existing_cols]
+        
+        return gdf_rm
+    except Exception as e:
+        st.error(f"Erro ao carregar shapefile de Regiões Metropolitanas: {e}")
+        return None
+
+
+
 def create_enriched_utp_summary(df_municipios):
     """
     Cria resumo enriquecido das UTPs com métricas territoriais relevantes.
@@ -343,7 +372,7 @@ def analyze_non_contiguous_utps(gdf):
     return non_contiguous
 
 
-def render_map(gdf_filtered, title="Mapa", graph=None):
+def render_map(gdf_filtered, title="Mapa", graph=None, gdf_rm=None, show_rm_borders=False):
     """Função auxiliar para renderizar um mapa folium com coloração por grafo."""
     if gdf_filtered is None or gdf_filtered.empty:
         st.info("Nenhum dado para visualizar neste filtro.")
@@ -457,6 +486,84 @@ def render_map(gdf_filtered, title="Mapa", graph=None):
             )
         ).add_to(m)
     
+    # Adicionar camada de contornos de Regiões Metropolitanas (opcional)
+    if show_rm_borders and gdf_rm is not None and not gdf_rm.empty:
+        logging.info(f"DEBUG RM: show_rm_borders={show_rm_borders}, gdf_rm.shape={gdf_rm.shape}")
+        
+        # ESTRATÉGIA: Matching espacial - verificar quais municípios estão dentro de cada RM do shapefile
+        # Isso evita problema de correspondência de nomes entre JSON e shapefile
+        
+        if 'regiao_metropolitana' in gdf_filtered.columns:
+            # Encontrar municípios que têm RM definida no JSON
+            municipios_com_rm = gdf_filtered[gdf_filtered['regiao_metropolitana'].notna() & 
+                                             (gdf_filtered['regiao_metropolitana'] != '')].copy()
+            
+            if not municipios_com_rm.empty:
+                logging.info(f"DEBUG RM: {len(municipios_com_rm)} municípios com RM no mapa")
+                
+                # Garantir mesma projeção para spatial join
+                if gdf_rm.crs != municipios_com_rm.crs:
+                    gdf_rm_proj = gdf_rm.to_crs(municipios_com_rm.crs)
+                else:
+                    gdf_rm_proj = gdf_rm
+                
+                # Fazer spatial join para encontrar qual RM do shapefile contém cada município
+                # Usar intersects em vez de within pois municípios podem estar parcialmente em RMs
+                try:
+                    import geopandas as gpd
+                    joined = gpd.sjoin(municipios_com_rm, gdf_rm_proj, how='left', predicate='intersects')
+                    
+                    # Encontrar RMs do shapefile que têm municípios
+                    rms_com_municipios = joined['index_right'].dropna().unique()
+                    
+                    logging.info(f"DEBUG RM: {len(rms_com_municipios)} RMs do shapefile têm municípios visíveis")
+                    
+                    if len(rms_com_municipios) > 0:
+                        # Desenhar contornos das RMs relevantes
+                        gdf_rm_filtered = gdf_rm_proj.iloc[rms_com_municipios].copy()
+                        
+                        for idx, row in gdf_rm_filtered.iterrows():
+                            nome_rm = row.get('NOME', 'N/A')
+                            uf = row.get('UF_SIGLA', 'N/A')
+                            num_municipios = int(row.get('MUNICIPIO', 0)) if pd.notna(row.get('MUNICIPIO')) else 0
+                            
+                            logging.info(f"DEBUG RM: Adicionando contorno para {nome_rm} ({uf})")
+                            
+                            # Tooltip para RM
+                            tooltip_rm = f"RM: {nome_rm} ({uf}) - {num_municipios} municípios"
+                            
+                            # Adicionar contorno da RM
+                            folium.GeoJson(
+                                row.geometry,
+                                style_function=lambda x: {
+                                    'fillColor': 'none',
+                                    'color': '#FF0000',  # Vermelho para destacar
+                                    'weight': 3,
+                                    'fillOpacity': 0,
+                                    'dashArray': '10, 5'  # Linha tracejada
+                                },
+                                tooltip=tooltip_rm,
+                                name=f"RM: {nome_rm}"
+                            ).add_to(m)
+                        
+                        logging.info(f"DEBUG RM: {len(gdf_rm_filtered)} contornos de RM adicionados ao mapa")
+                    else:
+                        logging.warning("DEBUG RM: Nenhuma RM do shapefile intersecta com municípios visíveis")
+                
+                except Exception as e:
+                    logging.error(f"DEBUG RM: Erro ao fazer spatial join: {e}")
+            else:
+                logging.info("DEBUG RM: Nenhum município com RM no mapa filtrado")
+        else:
+            logging.warning("DEBUG RM: Coluna 'regiao_metropolitana' não encontrada em gdf_filtered")
+    else:
+        if not show_rm_borders:
+            logging.info("DEBUG RM: show_rm_borders é False - RMs não serão exibidas")
+        elif gdf_rm is None:
+            logging.warning("DEBUG RM: gdf_rm é None - shapefile não foi carregado")
+        elif gdf_rm.empty:
+            logging.warning("DEBUG RM: gdf_rm está vazio - shapefile carregado mas sem dados")
+    
     map_html = m._repr_html_()
     st.components.v1.html(map_html, height=600, scrolling=False)
 
@@ -569,6 +676,10 @@ def render_dashboard(manager):
     shapefile_path = Path(__file__).parent.parent.parent / "data" / "01_raw" / "shapefiles" / "BR_Municipios_2024.shp"
     gdf = get_geodataframe(shapefile_path, df_municipios)
     
+    # Carregar shapefile de Regiões Metropolitanas
+    rm_shapefile_path = Path(__file__).parent.parent.parent / "data" / "01_raw" / "shapefiles" / "reg. metrop.shp"
+    gdf_rm = get_rm_geodataframe(rm_shapefile_path)
+    
     # Criar instância do grafo territorial para coloração
     try:
         graph = TerritorialGraph()
@@ -625,13 +736,24 @@ def render_dashboard(manager):
         st.markdown("---")
         st.markdown("#### Mapa Interativo")
         
+        # Controle de visualização de contornos de RM
+        show_rm_borders = st.checkbox(
+            "Mostrar contornos de Regiões Metropolitanas",
+            value=False,
+            key='show_rm_tab1',
+            help="Ativa/desativa a visualização dos contornos das Regiões Metropolitanas sobre o mapa de UTPs"
+        )
+        
         if gdf is not None:
             gdf_filtered = gdf[gdf['uf'].isin(selected_ufs)].copy()
             if selected_utps:
                 gdf_filtered = gdf_filtered[gdf_filtered['utp_id'].isin(selected_utps)]
             
             st.subheader(f"{len(selected_ufs)} Estado(s) | {len(gdf_filtered)} Municípios")
-            render_map(gdf_filtered, title="Distribuição Inicial", graph=graph)
+            
+            # Renderizar mapa com opção de mostrar contornos de RM
+            render_map(gdf_filtered, title="Distribuição por UTP", graph=graph, 
+                      gdf_rm=gdf_rm, show_rm_borders=show_rm_borders)
         
         st.markdown("---")
         st.markdown("#### Resumo das UTPs")
@@ -713,6 +835,14 @@ def render_dashboard(manager):
             st.markdown("---")
             st.markdown("#### Mapa Pós-Consolidação")
             
+            # Controle de visualização de contornos de RM
+            show_rm_borders_tab2 = st.checkbox(
+                "Mostrar contornos de Regiões Metropolitanas",
+                value=False,
+                key='show_rm_tab2',
+                help="Ativa/desativa a visualização dos contornos das Regiões Metropolitanas sobre o mapa de UTPs"
+            )
+            
             # Aplicar consolidações ao dataframe
             df_consolidated = consolidation_loader.apply_consolidations_to_dataframe(df_filtered)
             
@@ -727,7 +857,10 @@ def render_dashboard(manager):
                     ]
                 
                 st.subheader(f"{len(selected_ufs)} Estado(s) | {len(gdf_consolidated)} Municípios")
-                render_map(gdf_consolidated, title="Distribuição Consolidada", graph=graph)
+                
+                # Renderizar mapa com opção de mostrar contornos de RM
+                render_map(gdf_consolidated, title="Distribuição Consolidada", graph=graph,
+                          gdf_rm=gdf_rm, show_rm_borders=show_rm_borders_tab2)
             
             st.markdown("---")
             st.markdown("#### Registro de Consolidações")

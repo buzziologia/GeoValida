@@ -2,8 +2,9 @@
 import streamlit as st
 import folium
 import geopandas as gpd
+import pandas as pd
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Paleta de Alto Contraste (Cores bem distintas para evitar confusão)
 DISTINCT_COLORS = [
@@ -14,10 +15,19 @@ DISTINCT_COLORS = [
 
 def create_interactive_map(gdf: gpd.GeoDataFrame, 
                            coloring: Dict[int, int],
-                           seats: Dict[Any, int]) -> folium.Map:
+                           seats: Dict[Any, int],
+                           gdf_rm: Optional[gpd.GeoDataFrame] = None,
+                           show_rm_borders: bool = False) -> folium.Map:
     """
     Cria um mapa interativo com cores sólidas e alto contraste.
     Resolve a diferença de tons usando fillOpacity: 1.0.
+    
+    Args:
+        gdf: GeoDataFrame com geometrias dos municípios
+        coloring: Dicionário de coloração {cd_mun: color_idx}
+        seats: Dicionário de sedes {utp_id: cd_mun}
+        gdf_rm: GeoDataFrame opcional com geometrias das Regiões Metropolitanas
+        show_rm_borders: Se True, adiciona contornos das RMs como camada
     """
     m = folium.Map(location=[-15.78, -47.93], zoom_start=4, tiles="CartoDB positron")
     seat_ids = set(seats.values())
@@ -71,10 +81,61 @@ def create_interactive_map(gdf: gpd.GeoDataFrame,
     """
     m.get_root().html.add_child(folium.Element(legend_html))
     
+    # Adicionar camada de contornos de Regiões Metropolitanas (opcional)
+    if show_rm_borders and gdf_rm is not None and not gdf_rm.empty:
+        # ESTRATÉGIA: Matching espacial - verificar quais municípios estão dentro de cada RM do shapefile
+        if 'regiao_metropolitana' in gdf.columns:
+            municipios_com_rm = gdf[gdf['regiao_metropolitana'].notna() & 
+                                    (gdf['regiao_metropolitana'] != '')].copy()
+            
+            if not municipios_com_rm.empty:
+                # Garantir mesma projeção
+                if gdf_rm.crs != municipios_com_rm.crs:
+                    gdf_rm_proj = gdf_rm.to_crs(municipios_com_rm.crs)
+                else:
+                    gdf_rm_proj = gdf_rm
+                
+                # Spatial join para encontrar RMs que contêm municípios visíveis
+                try:
+                    joined = gpd.sjoin(municipios_com_rm, gdf_rm_proj, how='left', predicate='intersects')
+                    rms_com_municipios = joined['index_right'].dropna().unique()
+                    
+                    if len(rms_com_municipios) > 0:
+                        gdf_rm_filtered = gdf_rm_proj.iloc[rms_com_municipios].copy()
+                        
+                        for idx, row in gdf_rm_filtered.iterrows():
+                            nome_rm = row.get('NOME', 'N/A')
+                            uf = row.get('UF_SIGLA', 'N/A')
+                            num_municipios = int(row.get('MUNICIPIO', 0)) if pd.notna(row.get('MUNICIPIO')) else 0
+                            
+                            tooltip_rm = f"RM: {nome_rm} ({uf}) - {num_municipios} municípios"
+                            
+                            folium.GeoJson(
+                                row.geometry,
+                                style_function=lambda x: {
+                                    'fillColor': 'none',
+                                    'color': '#FF0000',
+                                    'weight': 3,
+                                    'fillOpacity': 0,
+                                    'dashArray': '10, 5'
+                                },
+                                tooltip=tooltip_rm,
+                                name=f"RM: {nome_rm}"
+                            ).add_to(m)
+                except Exception as e:
+                    logging.error(f"Erro ao fazer spatial join para RMs: {e}")
+    
     return m
 
-def render_maps(selected_step: str, manager=None):
-    """Renderiza os mapas no Streamlit."""
+def render_maps(selected_step: str, manager=None, gdf_rm: Optional[gpd.GeoDataFrame] = None, show_rm_borders: bool = False):
+    """Renderiza os mapas no Streamlit.
+    
+    Args:
+        selected_step: Nome da etapa selecionada
+        manager: Gerenciador de dados
+        gdf_rm: GeoDataFrame opcional com geometrias das Regiões Metropolitanas
+        show_rm_borders: Se True, mostra contornos das RMs
+    """
     if manager is None or manager.gdf is None:
         st.warning("Dados não carregados.")
         return
@@ -87,7 +148,7 @@ def render_maps(selected_step: str, manager=None):
             coloring = manager.graph.compute_graph_coloring(gdf_map)
             seats = manager.graph.utp_seeds
             
-            m = create_interactive_map(gdf_map, coloring, seats)
+            m = create_interactive_map(gdf_map, coloring, seats, gdf_rm, show_rm_borders)
             
             from streamlit.components.v1 import html
             html(m._repr_html_(), height=700)
@@ -98,8 +159,20 @@ def render_maps(selected_step: str, manager=None):
         logging.error(f"Erro na renderização do mapa: {e}", exc_info=True)
 
 def render_maps_filtered(selected_step: str, manager, gdf_filtered: gpd.GeoDataFrame, 
-                         coloring: Dict[int, int], seats: Dict[Any, int]):
-    """Renderiza o mapa filtrado no Streamlit."""
+                         coloring: Dict[int, int], seats: Dict[Any, int],
+                         gdf_rm: Optional[gpd.GeoDataFrame] = None,
+                         show_rm_borders: bool = False):
+    """Renderiza o mapa filtrado no Streamlit.
+    
+    Args:
+        selected_step: Nome da etapa selecionada
+        manager: Gerenciador de dados
+        gdf_filtered: GeoDataFrame filtrado com municípios a visualizar
+        coloring: Dicionário de coloração
+        seats: Dicionário de sedes
+        gdf_rm: GeoDataFrame opcional com geometrias das Regiões Metropolitanas
+        show_rm_borders: Se True, mostra contornos das RMs
+    """
     if gdf_filtered is None or gdf_filtered.empty:
         st.warning("Nenhum dado para visualizar com os filtros atuais.")
         return
@@ -108,7 +181,7 @@ def render_maps_filtered(selected_step: str, manager, gdf_filtered: gpd.GeoDataF
         if gdf_filtered.crs != "EPSG:4326":
             gdf_filtered = gdf_filtered.to_crs(epsg=4326)
             
-        m = create_interactive_map(gdf_filtered, coloring, seats)
+        m = create_interactive_map(gdf_filtered, coloring, seats, gdf_rm, show_rm_borders)
 
         from streamlit.components.v1 import html
         html(m._repr_html_(), height=700)
