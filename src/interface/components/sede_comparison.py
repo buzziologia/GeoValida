@@ -142,7 +142,7 @@ def render_socioeconomic_charts(df: pd.DataFrame) -> None:
         margin=dict(l=10, r=10, t=30, b=10)
     )
     
-    st.plotly_chart(fig_pop, use_container_width=True)
+    st.plotly_chart(fig_pop, width='stretch')
 
 
 def render_flow_matrix(df_raw: pd.DataFrame, top_n: int = 15) -> None:
@@ -204,7 +204,7 @@ def render_flow_matrix(df_raw: pd.DataFrame, top_n: int = 15) -> None:
     
     fig_heatmap.update_xaxes(tickangle=45)
     
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    st.plotly_chart(fig_heatmap, width='stretch')
     
     st.caption("**Nota:** Valores representam a % do fluxo total da sede de origem que vai para o destino indicado. Apenas os principais fluxos são mostrados.")
 
@@ -253,7 +253,7 @@ def render_regic_distribution(df: pd.DataFrame) -> None:
     
     fig_regic.update_xaxes(tickangle=45)
     
-    st.plotly_chart(fig_regic, use_container_width=True)
+    st.plotly_chart(fig_regic, width='stretch')
 
 
 def render_origin_destination_table(df: pd.DataFrame, show_alerts_only: bool = False) -> None:

@@ -103,7 +103,7 @@ def load_raw_data():
     logger.info(f"Carregando UTP Base de {utp_path}...")
     if not utp_path.exists():
         logger.error(f"Arquivo não encontrado: {utp_path}")
-        return None, None
+        return None, None, None
 
     if str(utp_path).endswith('.xlsx'):
         df_utp = pd.read_excel(utp_path, dtype=str)
@@ -117,7 +117,7 @@ def load_raw_data():
     logger.info(f"Carregando SEDE+REGIC de {regic_path}...")
     if not regic_path.exists():
         logger.error(f"Arquivo não encontrado: {regic_path}")
-        return None, None
+        return None, None, None
         
     if str(regic_path).endswith('.xlsx'):
         df_regic = pd.read_excel(regic_path, dtype=str)
@@ -125,10 +125,23 @@ def load_raw_data():
         df_regic = pd.read_csv(regic_path, sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
         
     logger.info(f"  ✓ REGIC: {len(df_regic)} linhas carregadas")
-    
-    return df_utp, df_regic
 
-def process_data(df_utp, df_regic):
+    # 3. Carregar Composição RM (NOVO)
+    rm_path = FILES['rm_composition']
+    logger.info(f"Carregando Composição RM de {rm_path}...")
+    df_rm = None
+    if rm_path.exists():
+        if str(rm_path).endswith('.xlsx'):
+            df_rm = pd.read_excel(rm_path, dtype=str)
+        else:
+            df_rm = pd.read_csv(rm_path, sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
+        logger.info(f"  ✓ RM: {len(df_rm)} linhas carregadas")
+    else:
+        logger.warning(f"Arquivo de RM não encontrado: {rm_path}")
+    
+    return df_utp, df_regic, df_rm
+
+def process_data(df_utp, df_regic, df_rm):
     """Processa e combina os dados para o formato do JSON."""
     logger.info("Processando dados...")
     
@@ -139,6 +152,43 @@ def process_data(df_utp, df_regic):
     df_utp.columns = df_utp.columns.str.lower().str.strip()
     df_regic.columns = df_regic.columns.str.lower().str.strip()
     
+    # Preparar dicionário de RMs
+    rm_dict = {}
+    if df_rm is not None:
+        try:
+            # Normalizar colunas do df_rm também
+            df_rm_cols = {c: c.upper().strip() for c in df_rm.columns}
+            df_rm.rename(columns=df_rm_cols, inplace=True)
+            
+            # Mapear COD_MUN -> NOME_CATMETROPOL
+            # Colunas esperadas: 'COD_MUN', 'NOME_CATMETROPOL'
+            for _, row in df_rm.iterrows():
+                try:
+                    c_mun = str(row.get('COD_MUN', '')).strip()
+                    if not c_mun or c_mun == 'nan':
+                        continue
+                        
+                    # Tratar código de 7 dígitos vs 6 dígitos se necessário
+                    # No initialization usamos 7 dígitos geralmente
+                    c_mun_int = int(float(c_mun))
+                    
+                    nm_cat = row.get('NOME_CATMETROPOL', '')
+                    if pd.isna(nm_cat):
+                        nm_cat = ''
+                    else:
+                        nm_cat = str(nm_cat).strip()
+                    
+                    if nm_cat:
+                        rm_dict[c_mun_int] = nm_cat
+                        # Também salvar versao com 6 dígitos por precaução
+                        rm_dict[int(str(c_mun_int)[:6])] = nm_cat
+                        
+                except Exception as e_rm:
+                    continue
+            logger.info(f"  ✓ {len(rm_dict)} mapeamentos de RM carregados")
+        except Exception as e:
+            logger.error(f"Erro ao processar arquivo de RMs: {e}")
+
     # Criar dicionário de municípios
     municipios = {}
     
@@ -152,10 +202,11 @@ def process_data(df_utp, df_regic):
     possible_utp = [c for c in df_utp.columns if 'utp' in c]
     col_utp = possible_utp[0] if possible_utp else 'utp_id'
     
-    possible_rm = [c for c in df_utp.columns if 'metropolitana' in c or 'rm' in c]
-    col_rm = possible_rm[0] if possible_rm else None
+    # Removendo deteccao antiga de RM do arquivo UTP pois estava incorreta/vazia
+    # possible_rm = [c for c in df_utp.columns if 'metropolitana' in c or 'rm' in c]
+    # col_rm = possible_rm[0] if possible_rm else None
 
-    logger.info(f"Colunas detectadas: CD={col_cd_mun}, NM={col_nm_mun}, UTP={col_utp}, RM={col_rm}")
+    logger.info(f"Colunas detectadas: CD={col_cd_mun}, NM={col_nm_mun}, UTP={col_utp}")
 
     for _, row in df_utp.iterrows():
         try:
@@ -164,9 +215,11 @@ def process_data(df_utp, df_regic):
                 
             cd_mun = int(float(row[col_cd_mun]))
             
-            rm_val = ''
-            if col_rm and col_rm in row and pd.notna(row[col_rm]):
-                rm_val = str(row[col_rm]).strip()
+            # Buscar RM do dicionário separado
+            rm_val = rm_dict.get(cd_mun, '')
+            if not rm_val:
+                # Tentar com 6 dígitos
+                rm_val = rm_dict.get(int(str(cd_mun)[:6]), '')
                 
             mun_data = {
                 'cd_mun': cd_mun,
@@ -217,13 +270,13 @@ def main():
     logger.info("CRIAÇÃO DO INITIALIZATION.JSON (COM ENRIQUECIMENTO)")
     logger.info("=" * 80)
     
-    df_utp, df_regic = load_raw_data()
+    df_utp, df_regic, df_rm = load_raw_data()
     
     if df_utp is None or df_regic is None:
         logger.error("Falha ao carregar dados brutos.")
         return 1
         
-    municipios_list = process_data(df_utp, df_regic)
+    municipios_list = process_data(df_utp, df_regic, df_rm)
     
     # Criar estrutura final
     data = {
@@ -232,6 +285,7 @@ def main():
             "source_files": [
                 str(FILES['utp_base'].name), 
                 str(FILES['sede_regic'].name),
+                str(FILES['rm_composition'].name),
                 "Base_Categorização(Base Organizada Normalizada).csv"
             ],
             "total_municipios": len(municipios_list)

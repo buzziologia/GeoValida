@@ -94,7 +94,7 @@ PASTEL_PALETTE = [
 ]
 
 
-@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id})
+@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id, pd.DataFrame: id})
 def get_geodataframe(shapefile_path, df_municipios):
     """Carrega, processa e simplifica o shapefile com cache."""
     if not shapefile_path.exists():
@@ -138,7 +138,7 @@ def get_geodataframe(shapefile_path, df_municipios):
         return None
 
 
-@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id})
+@st.cache_data(show_spinner=True, hash_funcs={gpd.GeoDataFrame: id, pd.DataFrame: id})
 def get_derived_rm_geodataframe(shapefile_path, df_municipios):
     """
     Gera geometrias de RMs dissolvendo os municípios a partir do shapefile original.

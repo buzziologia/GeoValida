@@ -184,7 +184,7 @@ def load_metropolitan_regions():
         df = pd.read_excel(file_path)
         
         # Verificar colunas necessárias
-        required_cols = ['COD_MUN', 'NOME_REC']
+        required_cols = ['COD_MUN', 'NOME_RECMETROPOL']
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             logger.warning(f"  ⚠ Colunas ausentes: {missing_cols}")

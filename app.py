@@ -1,4 +1,13 @@
 # app.py (Raiz)
+import sys
+from pathlib import Path
+
+# Adicionar o diretório raiz do projeto ao sys.path
+# Isso garante que os imports de 'src' funcionem tanto localmente quanto no Streamlit Cloud
+project_root = Path(__file__).parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import streamlit as st
 from src.core.manager import GeoValidaManager
 from src.interface.dashboard import render_dashboard
