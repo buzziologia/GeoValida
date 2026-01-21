@@ -1486,8 +1486,20 @@ def render_dashboard(manager):
                 
                 # Adicionar Contorno das UTPs (Preto)
                 try:
-                    # Dissolver por UTP para obter contorno externo
-                    gdf_utp_outlines = gdf_inter.dissolve(by='utp_id').reset_index()
+                    # Preparar geometria para dissolver
+                    # buffer(0.001) ~110m expande para fechar buracos/frestas entre municípios
+                    # Depois fazemos buffer negativo para voltar ao tamanho original
+                    epsilon = 0.001
+                    gdf_to_dissolve = gdf_inter.copy()
+                    gdf_to_dissolve['geometry'] = gdf_to_dissolve.geometry.buffer(epsilon)
+                    
+                    # Dissolver por UTP para obter contorno externo fundido
+                    gdf_dissolved = gdf_to_dissolve.dissolve(by='utp_id')
+                    
+                    # Restaurar tamanho original (contrair o que expandimos)
+                    gdf_utp_outlines = gdf_dissolved.copy()
+                    gdf_utp_outlines['geometry'] = gdf_dissolved.geometry.buffer(-epsilon)
+                    gdf_utp_outlines = gdf_utp_outlines.reset_index()
                     
                     folium.GeoJson(
                         gdf_utp_outlines,
