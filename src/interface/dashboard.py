@@ -193,6 +193,109 @@ def get_derived_rm_geodataframe(shapefile_path, df_municipios):
         return None
 
 
+@st.cache_resource(show_spinner="Construindo Grafo Territorial...")
+def get_territorial_graph(df_municipios):
+    """
+    Cria e cacheia o grafo territorial completo.
+    Evita recriação a cada renderização.
+    """
+    if df_municipios is None or df_municipios.empty:
+        return None
+        
+    try:
+        graph = TerritorialGraph()
+        # Carregar estrutura do grafo a partir dos dados
+        for _, row in df_municipios.iterrows():
+            cd_mun = int(row['cd_mun'])
+            nm_mun = row.get('nm_mun', str(cd_mun))
+            utp_id = str(row.get('utp_id', 'SEM_UTP'))
+            rm_name = row.get('regiao_metropolitana', '')
+            
+            if not rm_name or str(rm_name).strip() == '':
+                rm_name = "SEM_RM"
+            
+            # Criar hierarquia no grafo
+            rm_node = f"RM_{rm_name}"
+            if not graph.hierarchy.has_node(rm_node):
+                graph.hierarchy.add_node(rm_node, type='rm', name=rm_name)
+                graph.hierarchy.add_edge(graph.root, rm_node)
+            
+            utp_node = f"UTP_{utp_id}"
+            if not graph.hierarchy.has_node(utp_node):
+                graph.hierarchy.add_node(utp_node, type='utp', utp_id=utp_id)
+                graph.hierarchy.add_edge(rm_node, utp_node)
+            
+            graph.hierarchy.add_node(cd_mun, type='municipality', name=nm_mun)
+            graph.hierarchy.add_edge(utp_node, cd_mun)
+        
+        logging.info(f"Grafo territorial criado: {len(graph.hierarchy.nodes)} nós")
+        return graph
+    except Exception as e:
+        logging.error(f"Erro ao criar grafo territorial: {e}")
+        return None
+
+
+@st.cache_data(show_spinner="Carregando coloração global...", hash_funcs={gpd.GeoDataFrame: id, pd.DataFrame: id})
+def load_or_compute_coloring(gdf):
+    """
+    Gerencia a coloração global com persistência em arquivo.
+    
+    1. Tenta carregar de data/map_coloring_cache.json
+    2. Se não existir, calcula via grafo (demorado)
+    3. Salva o resultado para próximas execuções
+    
+    Returns:
+        Dict: mapeamento cd_mun (int) -> color_index (int)
+    """
+    cache_path = Path(__file__).parent.parent.parent / "data" / "map_coloring_cache.json"
+    
+    # Tentar carregar do arquivo
+    if cache_path.exists():
+        try:
+            with open(cache_path, "r") as f:
+                coloring_str_keys = json.load(f)
+                # JSON chaves são sempre strings, converter para int
+                coloring = {int(k): v for k, v in coloring_str_keys.items()}
+                logging.info(f"Coloração carregada do arquivo: {len(coloring)} municípios")
+                return coloring
+        except Exception as e:
+            logging.warning(f"Erro ao ler cache de coloração: {e}")
+    
+    # Se chegou aqui, precisa calcular
+    if gdf is None or gdf.empty:
+        return {}
+        
+    logging.info("Calculando nova coloração global...")
+    
+    # Criar grafo temporário apenas para o cálculo
+    # Não usamos o get_territorial_graph aqui para evitar dependência circular ou overhead
+    temp_graph = TerritorialGraph()
+    
+    # Preparar cópia leve para processamento
+    cols = ['utp_id', 'CD_MUN', 'geometry']
+    gdf_for_coloring = gdf[[c for c in cols if c in gdf.columns]].copy()
+    
+    if 'CD_MUN' in gdf_for_coloring.columns:
+        gdf_for_coloring['CD_MUN'] = gdf_for_coloring['CD_MUN'].astype(str)
+        
+    if 'utp_id' in gdf_for_coloring.columns:
+        gdf_for_coloring['UTP_ID'] = gdf_for_coloring['utp_id'].astype(str)
+    
+    # Calcular
+    coloring = temp_graph.compute_graph_coloring(gdf_for_coloring)
+    
+    # Salvar em arquivo
+    try:
+        with open(cache_path, "w") as f:
+            json.dump(coloring, f)
+        logging.info(f"Coloração salva em {cache_path}")
+    except Exception as e:
+        logging.error(f"Erro ao salvar cache de coloração: {e}")
+        
+    return coloring
+
+
+
 
 def create_enriched_utp_summary(df_municipios):
     """
@@ -338,6 +441,9 @@ def create_enriched_utp_summary(df_municipios):
     # Criar DataFrame
     summary_df = pd.DataFrame(summary_list)
     
+    if summary_df.empty:
+        return summary_df
+    
     # Ordenar por população (decrescente)
     summary_df = summary_df.sort_values('População', ascending=False)
     
@@ -432,7 +538,7 @@ def analyze_non_contiguous_utps(gdf):
     return non_contiguous
 
 
-def render_map(gdf_filtered, title="Mapa", graph=None, gdf_rm=None, show_rm_borders=False):
+def render_map(gdf_filtered, title="Mapa", global_colors=None, graph=None, gdf_rm=None, show_rm_borders=False):
     """Função auxiliar para renderizar um mapa folium com coloração por grafo."""
     if gdf_filtered is None or gdf_filtered.empty:
         st.info("Nenhum dado para visualizar neste filtro.")
@@ -440,8 +546,32 @@ def render_map(gdf_filtered, title="Mapa", graph=None, gdf_rm=None, show_rm_bord
     
     gdf_filtered = gdf_filtered.copy()
     
-    # Se o grafo foi fornecido, usar coloração mínima baseada em adjacência
-    if graph is not None:
+    # ESTRATÉGIA DE COLORAÇÃO
+    # 1. Se colors globais fornecidas (cacheado, rápido), usar.
+    # 2. Se grafo fornecido (dinâmico, lento), calcular.
+    # 3. Fallback: cores aleatórias por ID.
+    
+    coloring_applied = False
+    
+    if global_colors:
+        try:
+            # Mapear cores: cd_mun (int) -> color_idx -> cor hex
+            color_map = {}
+            for _, row in gdf_filtered.iterrows():
+                try:
+                    cd_mun = int(row['CD_MUN'])
+                    # global_colors retorna índice da cor
+                    color_idx = global_colors.get(cd_mun, 0) % len(PASTEL_PALETTE)
+                    color_map[row['utp_id']] = PASTEL_PALETTE[color_idx]
+                except (ValueError, KeyError):
+                    color_map[row['utp_id']] = PASTEL_PALETTE[0]
+            
+            gdf_filtered['color'] = gdf_filtered['utp_id'].map(color_map)
+            coloring_applied = True
+        except Exception as e:
+            logging.warning(f"Erro ao aplicar coloração global: {e}")
+    
+    if not coloring_applied and graph is not None:
         try:
             # Preparar GeoDataFrame para coloração (precisa de UTP_ID e CD_MUN como int)
             gdf_for_coloring = gdf_filtered.copy()
@@ -454,7 +584,7 @@ def render_map(gdf_filtered, title="Mapa", graph=None, gdf_rm=None, show_rm_bord
             gdf_for_coloring['CD_MUN'] = gdf_for_coloring['CD_MUN'].astype(str)
             gdf_for_coloring['UTP_ID'] = gdf_for_coloring['utp_id'].astype(str)
             
-            # Calcular coloração usando algoritmo de grafo
+            # Calcular coloração usando algoritmo de grafo (Stateless)
             coloring = graph.compute_graph_coloring(gdf_for_coloring)
             
             # Mapear cores: cd_mun (int) -> color_idx -> cor hex
@@ -468,21 +598,19 @@ def render_map(gdf_filtered, title="Mapa", graph=None, gdf_rm=None, show_rm_bord
                     color_map[row['utp_id']] = PASTEL_PALETTE[0]
             
             gdf_filtered['color'] = gdf_filtered['utp_id'].map(color_map)
-            logging.info(f"Coloração por grafo aplicada: {len(set(coloring.values()))} cores distintas")
+            # logging.info(f"Coloração por grafo aplicada: {len(set(coloring.values()))} cores distintas")
+            coloring_applied = True
         
         except Exception as e:
             logging.warning(f"Erro ao aplicar coloração por grafo, usando fallback: {e}")
-            # Fallback: usar coloração simples por UTP
-            utps_unique = gdf_filtered['utp_id'].dropna().unique()
-            colors = {utp: PASTEL_PALETTE[i % len(PASTEL_PALETTE)] 
-                     for i, utp in enumerate(sorted(utps_unique))}
-            gdf_filtered['color'] = gdf_filtered['utp_id'].map(colors)
-    else:
-        # Sem grafo: usar coloração simples
+            
+    if not coloring_applied:
+        # Fallback: coloração simples
         utps_unique = gdf_filtered['utp_id'].dropna().unique()
         colors = {utp: PASTEL_PALETTE[i % len(PASTEL_PALETTE)] 
                  for i, utp in enumerate(sorted(utps_unique))}
         gdf_filtered['color'] = gdf_filtered['utp_id'].map(colors)
+
     
     # Criar mapa folium
     m = folium.Map(
@@ -636,7 +764,34 @@ def render_dashboard(manager):
         else:
             selected_ufs = st.multiselect("Estados (UF)", ufs, default=[])
         
-        # Filtro por UTP
+        # Filtro por Município (Novo)
+        st.markdown("---")
+        # Criar lista formatada "Nome (UF)"
+        df_municipios['display_name'] = df_municipios['nm_mun'] + " (" + df_municipios['uf'] + ")"
+        mun_options = sorted(df_municipios['display_name'].unique().tolist())
+        
+        selected_muns_search = st.multiselect(
+            "Buscar Município", 
+            mun_options,
+            help="Selecione um ou mais municípios para visualizar suas UTPs completas."
+        )
+        
+        # Lógica de Filtro Reverso: Município -> UTP
+        # Se municípios forem selecionados, eles REDEFINEM a lista de UTPs selecionadas
+        forced_utps_from_search = []
+        if selected_muns_search:
+            # Extrair nomes puros (remove UF) - mas melhor usar ID se possível, aqui vamos pelo display_name
+            # Filtrar DF original
+            mask_search = df_municipios['display_name'].isin(selected_muns_search)
+            forced_utps_from_search = df_municipios[mask_search]['utp_id'].unique().tolist()
+            
+            # Atualizar/Forçar UTPs selecionadas
+            # Nota: Isso vai apenas impactar o filtro visual, não altera o widget de multiselect acima
+            # para não quebrar o estado do Streamlit. Apenas usamos na lógica de filtragem.
+            if forced_utps_from_search:
+                st.info(f"Visualizando {len(forced_utps_from_search)} UTP(s) referente(s) à busca.")
+        
+        # Filtro por UTP (Mantido, mas com lógica condicional)
         if selected_ufs:
             df_utp_options = df_municipios[df_municipios['uf'].isin(selected_ufs)]
         else:
@@ -649,7 +804,9 @@ def render_dashboard(manager):
             selected_utps = utps_list
             st.multiselect("UTPs", utps_list, default=utps_list, disabled=True)
         else:
-            selected_utps = st.multiselect("UTPs", utps_list, default=[])
+            # Se houver busca por muni, podemos pré-selecionar ou apenas ignorar este campo na lógica final
+            default_utps = []
+            selected_utps = st.multiselect("UTPs", utps_list, default=default_utps)
         
         st.markdown("---")
         st.caption(f"Dados de: {metadata.get('timestamp', 'N/A')[:10]}")
@@ -695,8 +852,16 @@ def render_dashboard(manager):
                         st.error("Falha na execução.")
     
     # Aplicar filtros
+    # Aplicar filtros
     df_filtered = df_municipios[df_municipios['uf'].isin(selected_ufs)].copy()
-    if selected_utps:
+    
+    # Lógica de prioridade: Busca por Município > Filtro de UTP
+    if forced_utps_from_search:
+        # Se buscou município, ignora o filtro de UTP manual e mostra as UTPs da busca
+        # Mas mantemos o filtro de UF? Geralmente user quer ver o resultado da busca independente da UF
+        # Vamos priorizar a busca globalmente
+        df_filtered = df_municipios[df_municipios['utp_id'].isin(forced_utps_from_search)].copy()
+    elif selected_utps:
         df_filtered = df_filtered[df_filtered['utp_id'].isin(selected_utps)]
     
     # Carregar shapefile
@@ -706,43 +871,24 @@ def render_dashboard(manager):
     # Gerar geometrias de RMs a partir dos municípios (usando shapefile bruto para evitar buracos)
     gdf_rm = get_derived_rm_geodataframe(shapefile_path, df_municipios)
     
-    # Criar instância do grafo territorial para coloração
-    try:
-        graph = TerritorialGraph()
-        # Carregar estrutura do grafo a partir dos dados
-        for _, row in df_municipios.iterrows():
-            cd_mun = int(row['cd_mun'])
-            nm_mun = row.get('nm_mun', str(cd_mun))
-            utp_id = str(row.get('utp_id', 'SEM_UTP'))
-            rm_name = row.get('regiao_metropolitana', '')
-            
-            if not rm_name or rm_name.strip() == '':
-                rm_name = "SEM_RM"
-            
-            # Criar hierarquia no grafo
-            rm_node = f"RM_{rm_name}"
-            if not graph.hierarchy.has_node(rm_node):
-                graph.hierarchy.add_node(rm_node, type='rm', name=rm_name)
-                graph.hierarchy.add_edge(graph.root, rm_node)
-            
-            utp_node = f"UTP_{utp_id}"
-            if not graph.hierarchy.has_node(utp_node):
-                graph.hierarchy.add_node(utp_node, type='utp', utp_id=utp_id)
-                graph.hierarchy.add_edge(rm_node, utp_node)
-            
-            graph.hierarchy.add_node(cd_mun, type='municipality', name=nm_mun)
-            graph.hierarchy.add_edge(utp_node, cd_mun)
-        
-        logging.info(f"Grafo territorial criado: {len(graph.hierarchy.nodes)} nós")
-    except Exception as e:
-        logging.error(f"Erro ao criar grafo territorial: {e}")
-        graph = None
+    # 1. Preparar DataFrame limpo para o grafo (sem dicts para evitar erro de hash)
+    # Selecionamos apenas as colunas necessárias para a estrutura topológica
+    topology_cols = ['cd_mun', 'nm_mun', 'utp_id', 'regiao_metropolitana']
+    df_topology = df_municipios[topology_cols].copy()
+    
+    # Criar e cachear grafo territorial usando o DF limpo
+    graph = get_territorial_graph(df_topology)
+    
+    # 2. Carregar ou calcular coloração GLOBAL (Persistente em arquivo)
+    # Isso é feito apenas uma vez por projeto (salvo em disco)
+    global_colors = load_or_compute_coloring(gdf) if gdf is not None else {}
     
     # === TABS ===
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "Distribuição Inicial",
         "Pós-Consolidação",
-        "Análise de Dependências"
+        "Análise de Dependências",
+        "Análise Interestadual"
     ])
     
     # ==== TAB 1: DISTRIBUIÇÃO INICIAL ====
@@ -778,8 +924,8 @@ def render_dashboard(manager):
             st.subheader(f"{len(selected_ufs)} Estado(s) | {len(gdf_filtered)} Municípios")
             
             # Renderizar mapa com opção de mostrar contornos de RM
-            render_map(gdf_filtered, title="Distribuição por UTP", graph=graph, 
-                      gdf_rm=gdf_rm, show_rm_borders=show_rm_borders)
+            render_map(gdf_filtered, title="Distribuição por UTP", global_colors=global_colors, 
+                       gdf_rm=gdf_rm, show_rm_borders=show_rm_borders)
         
         st.markdown("---")
         st.markdown("#### Resumo das UTPs")
@@ -1237,3 +1383,153 @@ def render_dashboard(manager):
         <p style='font-size: 0.8rem; color: #999;'>Cache de consolidação em: <code>data/consolidation_result.json</code></p>
     </div>
     """, unsafe_allow_html=True)
+
+
+    # ==== TAB 4: ANÁLISE INTERESTADUAL ====
+    with tab4:
+        st.markdown("### <span class='step-badge step-final'>ANÁLISE</span> UTPs Interestaduais", unsafe_allow_html=True)
+        st.markdown("Identificação de UTPs que abrangem municípios de múltiplos estados.")
+        st.markdown("---")
+        
+        # 1. Identificar UTPs interestaduais
+        # Agrupar por UTP e contar UFs únicos
+        stats_interestadual = df_municipios.groupby('utp_id')['uf'].nunique().reset_index()
+        utps_interestaduais_ids = stats_interestadual[stats_interestadual['uf'] > 1]['utp_id'].tolist()
+        
+        if not utps_interestaduais_ids:
+            st.info("Nenhuma UTP interestadual encontrada.")
+        else:
+            # Filtrar dados para essas UTPs
+            df_interestadual = df_municipios[df_municipios['utp_id'].isin(utps_interestaduais_ids)].copy()
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Total de UTPs Interestaduais", len(utps_interestaduais_ids))
+            with col2:
+                st.metric("Municípios Envolvidos", len(df_interestadual))
+            
+            # --- MAPA COM COLORAÇÃO ESPECÍFICA ---
+            st.markdown("#### Mapa de Discrepância de Estado")
+            st.caption("🔴 Tons de Vermelho: Município em estado diferente da Sede | ⚪ Tons de Cinza: Município no mesmo estado da Sede")
+            st.caption("*(Cores variam para distinguir UTPs vizinhas)*")
+            
+            # Criar mapa de cores customizado
+            custom_colors = {} # cd_mun -> hex color
+            
+            # Paletas topológicas (5 cores cada) para garantir contraste entre vizinhos
+            # Reds para "Fora do Estado"
+            REDS = ['#FF0000', '#B22222', '#CD5C5C', '#8B0000', '#FF4500']
+            # Grays para "Dentro do Estado"
+            GRAYS = ['#D3D3D3', '#A9A9A9', '#808080', '#696969', '#C0C0C0']
+            
+            # Iterar por UTP para determinar cores
+            for utp_id, group in df_interestadual.groupby('utp_id'):
+                # Achar a sede
+                sede_row = group[group['sede_utp'] == True]
+                if sede_row.empty:
+                    # Se não tem sede definida (raro), usa a moda da UF
+                    sede_uf = group['uf'].mode().iloc[0]
+                else:
+                    sede_uf = sede_row.iloc[0]['uf']
+                
+                # Colorir
+                for idx, row in group.iterrows():
+                    cd_mun = int(row['cd_mun'])
+                    
+                    # Obter índice de coloração topológica (0-4)
+                    # Isso garante que UTPs vizinhas tenham índices diferentes
+                    color_idx = global_colors.get(cd_mun, 0)
+                    palette_idx = color_idx % 5
+                    
+                    if row['uf'] != sede_uf:
+                        custom_colors[cd_mun] = REDS[palette_idx] # Variação de vermelho
+                    else:
+                        custom_colors[cd_mun] = GRAYS[palette_idx] # Variação de cinza
+            
+            if gdf is not None:
+                # Filtrar GDF
+                gdf_inter = gdf[gdf['utp_id'].isin(utps_interestaduais_ids)].copy()
+                
+                # Calcular Cores Reais
+                def get_color(row):
+                    cd_mun_int = int(row['CD_MUN'])
+                    # Retorna a cor calculada ou branco se erro
+                    return custom_colors.get(cd_mun_int, '#FFFFFF')
+                
+                gdf_inter['color'] = gdf_inter.apply(get_color, axis=1)
+                
+                # Renderizar Folium
+                m_inter = folium.Map(
+                    location=[-15, -55], zoom_start=4,
+                    tiles="CartoDB positron", prefer_canvas=True
+                )
+                
+                if not gdf_inter.empty:
+                    bounds = gdf_inter.total_bounds
+                    m_inter.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]], padding=(0.05, 0.05))
+                
+                # Estilo
+                folium.GeoJson(
+                    gdf_inter.to_json(),
+                    style_function=lambda x: {
+                        'fillColor': x['properties'].get('color', '#cccccc'),
+                        'color': '#ffffff', # Borda branca para destacar municípios
+                        'weight': 0.5,
+                        'fillOpacity': 0.8
+                    },
+                    tooltip=folium.GeoJsonTooltip(
+                        fields=['NM_MUN', 'utp_id', 'uf', 'nm_sede'],
+                        aliases=['Município:', 'UTP:', 'UF:', 'Sede:'],
+                        localize=True
+                    )
+                ).add_to(m_inter)
+                
+                # Adicionar Contorno das UTPs (Preto)
+                try:
+                    # Dissolver por UTP para obter contorno externo
+                    gdf_utp_outlines = gdf_inter.dissolve(by='utp_id').reset_index()
+                    
+                    folium.GeoJson(
+                        gdf_utp_outlines,
+                        style_function=lambda x: {
+                            'fillColor': 'none',
+                            'color': '#000000', # Preto
+                            'weight': 2.0,      # Mais espesso que os municípios
+                            'fillOpacity': 0
+                        },
+                        interactive=False, # Não atrapalhar tooltip dos municípios
+                        name="Contornos de UTP"
+                    ).add_to(m_inter)
+                except Exception as e:
+                    logging.warning(f"Erro ao gerar contornos de UTP: {e}")
+                
+                map_html_inter = m_inter._repr_html_()
+                st.components.v1.html(map_html_inter, height=600, scrolling=False)
+            
+            st.markdown("---")
+            st.markdown("#### Detalhamento")
+            
+            # Tabela detalhada
+            table_data = []
+            for utp_id, group in df_interestadual.groupby('utp_id'):
+                # Identificar UFs presentes
+                ufs_presentes = sorted(group['uf'].unique().tolist())
+                sede_row = group[group['sede_utp'] == True]
+                sede_nm = sede_row.iloc[0]['nm_mun'] if not sede_row.empty else "N/A"
+                sede_uf = sede_row.iloc[0]['uf'] if not sede_row.empty else "N/A"
+                
+                # Contar municípios fora do estado da sede
+                muns_fora = group[group['uf'] != sede_uf]
+                qtd_fora = len(muns_fora)
+                
+                table_data.append({
+                    "UTP": utp_id,
+                    "Sede": f"{sede_nm} ({sede_uf})",
+                    "UFs Envolvidas": ", ".join(ufs_presentes),
+                    "Qtd. Municípios Fora do Estado da Sede": qtd_fora,
+                    "Total Municípios": len(group)
+                })
+            
+            df_table_inter = pd.DataFrame(table_data).sort_values("Qtd. Municípios Fora do Estado da Sede", ascending=False)
+            st.dataframe(df_table_inter, hide_index=True, width='stretch')
+
