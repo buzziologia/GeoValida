@@ -1531,3 +1531,4 @@ def render_dashboard(manager):
             df_table_inter = pd.DataFrame(table_data).sort_values("Qtd. Municípios Fora do Estado da Sede", ascending=False)
             st.dataframe(df_table_inter, hide_index=True, width='stretch')
 
+
