@@ -418,6 +418,68 @@ class SedeConsolidator:
         # Filter candidates using simplified rules
         candidates = self._filter_candidates(df_metrics)
         
+        # Resolve mutual preference conflicts (A -> B and B -> A).
+        # When two sedes prefer each other, only allow the movement of the one
+        # whose total originating flow is smaller. If flows are equal, reject both
+        # to avoid mutual loss of sede status.
+        if candidates and flow_df is not None:
+            mapping = {str(c['sede_origem']): str(c['sede_destino']) for c in candidates}
+            to_remove = set()
+            for c in candidates:
+                a = str(c['sede_origem'])
+                b = str(c['sede_destino'])
+                # Check reciprocal
+                if b in mapping and mapping[b] == a:
+                    # Already decided
+                    if a in to_remove or b in to_remove:
+                        continue
+
+                    try:
+                        flow_a = float(self._get_total_flow(int(a), flow_df) or 0)
+                    except Exception:
+                        flow_a = 0.0
+                    try:
+                        flow_b = float(self._get_total_flow(int(b), flow_df) or 0)
+                    except Exception:
+                        flow_b = 0.0
+
+                    if flow_a == flow_b:
+                        # Tie: reject both
+                        to_remove.update([a, b])
+                        reason = f'Concorrência recíproca com mesmo fluxo ({flow_a}); nenhum movido.'
+                    elif flow_a > flow_b:
+                        # A has larger flow (is bigger/stronger).
+                        # We want to KEEP A (reject move A->B) and EXECUTE move B->A.
+                        # Matches candidate where sede_origem = A
+                        to_remove.add(a) 
+                        reason = f'Concorrência: {a} tem fluxo maior ({flow_a}) que {b} ({flow_b}); {a} deve ser MANTIDO (removemos A->B) e {b} deve mover (mantemos B->A).'
+                    else:
+                        # B has larger flow.
+                        # We want to KEEP B (reject move B->A) and EXECUTE move A->B.
+                        # Matches candidate where sede_origem = B
+                        to_remove.add(b)
+                        reason = f'Concorrência: {b} tem fluxo maior ({flow_b}) que {a} ({flow_a}); {b} deve ser MANTIDO (removemos B->A) e {a} deve mover (mantemos A->B).'
+
+                    # Register rejected candidate(s)
+                    for rem in ( [a, b] if flow_a == flow_b else ([b] if flow_a > flow_b else [a]) ):
+                        # find candidate dict
+                        rem_cand = next((x for x in candidates if str(x['sede_origem']) == str(rem)), None)
+                        if rem_cand:
+                            self.rejected_candidates.append({
+                                'sede_origem': rem_cand.get('sede_origem', ''),
+                                'nm_origem': rem_cand.get('nm_origem', ''),
+                                'utp_origem': rem_cand.get('utp_origem', ''),
+                                'sede_destino': rem_cand.get('sede_destino', ''),
+                                'utp_destino': rem_cand.get('utp_destino', ''),
+                                'motivo_rejeicao': reason
+                            })
+
+            if to_remove:
+                before_count = len(candidates)
+                candidates = [c for c in candidates if str(c['sede_origem']) not in to_remove]
+                self.logger.info(f"🔁 Resolved {len(to_remove)} reciprocal candidate(s): {to_remove}. Candidates reduced {before_count}->{len(candidates)}")
+        elif candidates and flow_df is None:
+            self.logger.warning('Fluxo de viagens (flow_df) não fornecido: não foi possível resolver concorrências recíprocas automaticamente.')
         if not candidates:
             self.logger.info("✅ No consolidation candidates found.")
             self._save_results_and_csv()
@@ -430,6 +492,7 @@ class SedeConsolidator:
         
         for cand in candidates:
             sede_origem = cand['sede_origem']
+            sede_destino = cand['sede_destino'] if 'sede_destino' in cand else None
             utp_origem = cand['utp_origem']
             utp_destino = cand['utp_destino']
             
@@ -439,14 +502,19 @@ class SedeConsolidator:
             muns_to_move = []
             for node, data in self.graph.hierarchy.nodes(data=True):
                 if data.get('type') == 'municipality':
-                    if self.graph.get_municipality_utp(node) == utp_origem:
+                    # FIX: Type mismatch (int vs str) caused failure to find municipalities
+                    if str(self.graph.get_municipality_utp(node)) == str(utp_origem):
                         muns_to_move.append(node)
             
             self.logger.info(f"  Moving entire UTP: {len(muns_to_move)} municipalities from {utp_origem} to {utp_destino}")
-            
+
+            # Preserve original membership to detect full vs partial moves
+            original_muns = set(muns_to_move)
+
             # Move all municipalities
             for mun in muns_to_move:
                 self.graph.move_municipality(mun, utp_destino)
+                self.logger.debug(f"DEBUG: Moved municipality {mun} from UTP {utp_origem} to UTP {utp_destino}")
                 
                 # Update GDF for this municipality
                 if gdf is not None and 'CD_MUN' in gdf.columns:
@@ -463,6 +531,7 @@ class SedeConsolidator:
                 reason=f"Sede consolidation (full UTP): Score {cand['score_origem']}->{cand['score_destino']}, Travel {cand['tempo_viagem_h']:.2f}h",
                 details={
                     "sede_id": sede_origem,
+                    "is_sede": True,  # FIX: Add flag so it appears in CSV
                     "nm_sede": cand['nm_origem'],
                     "municipalities_moved": len(muns_to_move),
                     "score_origem": cand['score_origem'],
@@ -474,18 +543,81 @@ class SedeConsolidator:
             )
             self.changes_current_run.append(cons_entry)
             
-            # Revoke sede status from origin
-            if self.graph.hierarchy.has_node(sede_origem):
-                self.graph.hierarchy.nodes[sede_origem]['sede_utp'] = False
-            
-            # Remove UTP from seeds
-            if str(utp_origem) in self.graph.utp_seeds:
-                del self.graph.utp_seeds[str(utp_origem)]
-            
-            # Remove empty UTP node
-            utp_node = f"UTP_{utp_origem}"
-            if self.graph.hierarchy.has_node(utp_node):
-                self.graph.hierarchy.remove_node(utp_node)
+
+            # Revoga status de sede apenas se a sede de origem realmente mudou de UTP
+            if sede_origem in muns_to_move and str(self.graph.get_municipality_utp(sede_origem)) == str(utp_destino):
+                if self.graph.hierarchy.has_node(sede_origem):
+                    self.logger.debug(f"DEBUG: Revoking sede flag for municipality {sede_origem} (UTP {utp_origem} -> {utp_destino})")
+                    self.graph.hierarchy.nodes[sede_origem]['sede_utp'] = False
+
+                # Decide corretamente sobre o mapeamento de seeds e remoção de UTP
+                utp_node = f"UTP_{utp_origem}"
+
+                # Recalcula sucessores da UTP após a movimentação
+                successors = list(self.graph.hierarchy.successors(utp_node)) if self.graph.hierarchy.has_node(utp_node) else []
+
+                # Identify remaining municipalities
+                remaining_muns = [n for n in successors if self.graph.hierarchy.nodes[n].get('type') == 'municipality']
+
+                # Se a UTP ficou vazia --> remover seed e nó
+                if not remaining_muns:
+                    if str(utp_origem) in self.graph.utp_seeds:
+                        self.logger.debug(f"DEBUG: Deleting utp_seeds[{utp_origem}] -> {self.graph.utp_seeds.get(str(utp_origem))}")
+                        del self.graph.utp_seeds[str(utp_origem)]
+                    if self.graph.hierarchy.has_node(utp_node):
+                        self.logger.debug(f"DEBUG: Removing UTP node {utp_node} from hierarchy (empty after move)")
+                        self.graph.hierarchy.remove_node(utp_node)
+                else:
+                    # Partial move: apenas reatribuir seed se a seed atual não pertence mais à UTP
+                    if str(utp_origem) in self.graph.utp_seeds:
+                        current_seed = self.graph.utp_seeds[str(utp_origem)]
+                        if (not self.graph.hierarchy.has_node(current_seed)) or (current_seed not in remaining_muns):
+                            # Escolher nova sede: preferir município já marcado como sede, senão o primeiro
+                            new_sede = None
+                            for m in remaining_muns:
+                                if self.graph.hierarchy.nodes[m].get('sede_utp'):
+                                    new_sede = m
+                                    break
+                            if new_sede is None and remaining_muns:
+                                new_sede = remaining_muns[0]
+
+                            if new_sede is not None:
+                                self.logger.debug(f"DEBUG: Reassigning seed for UTP {utp_origem} -> {new_sede} (was {current_seed})")
+                                self.graph.utp_seeds[str(utp_origem)] = new_sede
+                                if self.graph.hierarchy.has_node(new_sede):
+                                    self.graph.hierarchy.nodes[new_sede]['sede_utp'] = True
+                    else:
+                        # No seed recorded previously: set one from remaining
+                        if remaining_muns:
+                            new_sede = remaining_muns[0]
+                            self.logger.debug(f"DEBUG: Setting missing seed for UTP {utp_origem} -> {new_sede}")
+                            self.graph.utp_seeds[str(utp_origem)] = new_sede
+                            if self.graph.hierarchy.has_node(new_sede):
+                                self.graph.hierarchy.nodes[new_sede]['sede_utp'] = True
+
+            # GARANTIR QUE A UTP DE DESTINO SEMPRE TERÁ UMA SEDE REGISTRADA
+            # Se não houver sede registrada para a UTP destino, definir a sede_destino (ou sede_origem se apropriado)
+            utp_destino_str = str(utp_destino)
+            if utp_destino_str not in self.graph.utp_seeds or not self.graph.hierarchy.has_node(self.graph.utp_seeds[utp_destino_str]):
+                # Preferir sede_destino se ela está entre os municípios da UTP destino
+                if sede_destino in muns_to_move and str(self.graph.get_municipality_utp(sede_destino)) == utp_destino_str:
+                    self.logger.debug(f"DEBUG: Setting utp_seeds[{utp_destino_str}] -> {sede_destino} (preferred destination sede)")
+                    self.graph.utp_seeds[utp_destino_str] = sede_destino
+                    if self.graph.hierarchy.has_node(sede_destino):
+                        self.graph.hierarchy.nodes[sede_destino]['sede_utp'] = True
+                # Se não, usar sede_origem se ela foi movida para a UTP destino
+                elif sede_origem in muns_to_move and str(self.graph.get_municipality_utp(sede_origem)) == utp_destino_str:
+                    self.logger.debug(f"DEBUG: Setting utp_seeds[{utp_destino_str}] -> {sede_origem} (sede_origem moved into destino)")
+                    self.graph.utp_seeds[utp_destino_str] = sede_origem
+                    if self.graph.hierarchy.has_node(sede_origem):
+                        self.graph.hierarchy.nodes[sede_origem]['sede_utp'] = True
+                # Como fallback, escolher qualquer município da UTP destino
+                elif muns_to_move:
+                    mun_fallback = muns_to_move[0]
+                    self.logger.debug(f"DEBUG: Fallback setting utp_seeds[{utp_destino_str}] -> {mun_fallback}")
+                    self.graph.utp_seeds[utp_destino_str] = mun_fallback
+                    if self.graph.hierarchy.has_node(mun_fallback):
+                        self.graph.hierarchy.nodes[mun_fallback]['sede_utp'] = True
             
             total_changes += 1
             self.logger.info(f"  ✅ Sede consolidation complete: {len(muns_to_move)} municipalities moved")
@@ -548,10 +680,12 @@ class SedeConsolidator:
         # Add approved consolidations
         for change in self.changes_current_run:
             if change.get('details', {}).get('is_sede', False):  # Only record sede movements, not individual municipalities
+                # Backwards-compatible: some entries use 'mun_id', others use 'sede_id'
+                sede_origem_id = change['details'].get('mun_id', change['details'].get('sede_id', ''))
                 csv_records.append({
-                    'sede_origem': change['details']['mun_id'],
+                    'sede_origem': sede_origem_id,
                     'utp_origem': change['source_utp'],
-                    'sede_destino': '',  # We don't track this in current structure
+                    'sede_destino': change['details'].get('sede_destino', ''),
                     'utp_destino': change['target_utp'],
                     'tempo_viagem_h': change['details'].get('tempo_viagem_h', ''),
                     'score_origem': change['details'].get('score_origem', ''),

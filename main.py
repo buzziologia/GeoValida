@@ -83,6 +83,20 @@ def run_pipeline():
         logger.warning(f"⚠️ Erro no pré-processamento: {e}")
         logger.info("   (O dashboard poderá processar os shapefiles sob demanda)")
         
+        
+    # 5. Pré-calcular Popups de Fluxo
+    logger.info("\n>>> ETAPA 5: PRÉ-CÁLCULO DE POPUPS DE FLUXO <<<")
+    try:
+        from scripts.s06_precompute_popups import main as precompute_popups
+        result = precompute_popups()
+        if result == 0:
+            logger.info("✅ Pré-cálculo de popups concluído.")
+        else:
+            logger.warning("⚠️ Erro no pré-cálculo de popups (não crítico).")
+    except Exception as e:
+        logger.warning(f"⚠️ Erro no pré-cálculo de popups: {e}")
+        logger.info("   (O dashboard calulará os popups sob demanda)")
+        
     logger.info("\n" + "*" * 80)
     logger.info("✅ PIPELINE COMPLETO FINALIZADO COM SUCESSO")
     logger.info("*" * 80)

@@ -110,6 +110,7 @@ def login_card() -> rx.Component:
                 ),
                 rx.button(
                     "Acesso Público",
+                    on_click=rx.redirect("/dashboard"),
                     bg="white",
                     color=TEXT_COLOR["azul_brasil"],
                     border=f"1px solid {TEXT_COLOR['azul_brasil']}",

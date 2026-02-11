@@ -126,7 +126,13 @@ class TerritorialGraph:
             # Verifica se está vazia (sem municípios)
             successors = list(self.hierarchy.successors(utp_node))
             if not successors:
-                # Remove o nó UTP vazio
+                # Remove o nó UTP vazio e qualquer seed associada
+                utp_id = str(utp_node).replace("UTP_", "")
+                if utp_id in self.utp_seeds:
+                    try:
+                        del self.utp_seeds[utp_id]
+                    except KeyError:
+                        pass
                 self.hierarchy.remove_node(utp_node)
                 removed_count += 1
                 logging.debug(f"Removed empty UTP: {utp_node}")

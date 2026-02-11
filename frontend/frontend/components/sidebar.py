@@ -97,7 +97,7 @@ def sidebar() -> rx.Component:
             justify="between", 
         ),
         padding="1em",
-        height="100vh",
+        height="100%",
         bg=PAGE_COLOR["cinza_sidebar"],
         width=rx.cond(SidebarState.show_sidebar, "280px", "80px"),
         display=["none", "none", "block"], 

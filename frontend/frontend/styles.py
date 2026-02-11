@@ -40,7 +40,7 @@ TEXT_COLOR = {
     "preto":            "#000000",
     "azul_brasil":      "#071D41",
     "azul_bandeira":    "#0C326F",
-    "amarelo_brasil":   "EACD04",
+    "amarelo_brasil":   "#EACD04",
 }
 
 

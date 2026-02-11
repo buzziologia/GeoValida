@@ -1,15 +1,13 @@
 {
   "version": "1.0",
   "status": "executed",
-  "timestamp_created": "2026-02-09T09:38:50.377292",
-  "timestamp_last_updated": "2026-02-09T09:38:50.377297",
-  "total_consolidations": 111,
+  "timestamp_created": "2026-02-11T12:12:17.652027",
+  "timestamp_last_updated": "2026-02-11T12:12:17.652033",
+  "total_consolidations": 102,
   "utps_mapping": {
     "478": "662",
-    "525": "375",
     "616": "618",
     "20": "307",
-    "727": "38",
     "2": "128",
     "419": "745",
     "273": "314",
@@ -25,7 +23,6 @@
     "366": "675",
     "683": "253",
     "NOVA3": "209",
-    "602": "623",
     "667": "627",
     "431": "520",
     "432": "520",
@@ -95,33 +92,32 @@
     "672": "497",
     "293": "359",
     "687": "299",
-    "691": "711",
     "717": "497",
     "338": "193",
     "359": "293",
     "380": "148",
     "386": "294",
-    "408": "275",
     "103": "148",
     "580": "148",
     "612": "784",
     "464": "98",
     "572": "725",
     "725": "324",
-    "555": "287",
     "536": "642",
+    "555": "287",
     "590": "555",
     "680": "287"
   },
   "consolidations": [
     {
       "id": 93,
-      "timestamp": "2026-02-09T09:38:46.962918",
+      "timestamp": "2026-02-11T12:12:14.231018",
       "source_utp": "478",
       "target_utp": "662",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.29h",
       "details": {
         "sede_id": 1502707,
+        "is_sede": true,
         "nm_sede": "Conceição do Araguaia",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -133,29 +129,13 @@
     },
     {
       "id": 94,
-      "timestamp": "2026-02-09T09:38:46.992254",
-      "source_utp": "525",
-      "target_utp": "375",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.67h",
-      "details": {
-        "sede_id": 1503101,
-        "nm_sede": "Gurupá",
-        "municipalities_moved": 2,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.67,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 95,
-      "timestamp": "2026-02-09T09:38:47.029372",
+      "timestamp": "2026-02-11T12:12:14.264735",
       "source_utp": "616",
       "target_utp": "618",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.32h",
       "details": {
         "sede_id": 1505106,
+        "is_sede": true,
         "nm_sede": "Óbidos",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -166,13 +146,14 @@
       }
     },
     {
-      "id": 96,
-      "timestamp": "2026-02-09T09:38:47.057917",
+      "id": 95,
+      "timestamp": "2026-02-11T12:12:14.348777",
       "source_utp": "20",
       "target_utp": "307",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.71h",
       "details": {
         "sede_id": 1702109,
+        "is_sede": true,
         "nm_sede": "Araguaína",
         "municipalities_moved": 10,
         "score_origem": 0,
@@ -183,30 +164,14 @@
       }
     },
     {
-      "id": 97,
-      "timestamp": "2026-02-09T09:38:47.078436",
-      "source_utp": "727",
-      "target_utp": "38",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.14h",
-      "details": {
-        "sede_id": 1720903,
-        "nm_sede": "Taguatinga",
-        "municipalities_moved": 6,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.14,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 98,
-      "timestamp": "2026-02-09T09:38:47.099303",
+      "id": 96,
+      "timestamp": "2026-02-11T12:12:14.375324",
       "source_utp": "2",
       "target_utp": "128",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.04h",
       "details": {
         "sede_id": 2100055,
+        "is_sede": true,
         "nm_sede": "Açailândia",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -217,13 +182,14 @@
       }
     },
     {
-      "id": 99,
-      "timestamp": "2026-02-09T09:38:47.128299",
+      "id": 97,
+      "timestamp": "2026-02-11T12:12:14.393677",
       "source_utp": "419",
       "target_utp": "745",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.14h",
       "details": {
         "sede_id": 2103208,
+        "is_sede": true,
         "nm_sede": "Chapadinha",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -234,13 +200,14 @@
       }
     },
     {
-      "id": 100,
-      "timestamp": "2026-02-09T09:38:47.149579",
+      "id": 98,
+      "timestamp": "2026-02-11T12:12:14.422728",
       "source_utp": "273",
       "target_utp": "314",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.18h",
       "details": {
         "sede_id": 2110203,
+        "is_sede": true,
         "nm_sede": "Santa Rita",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -251,13 +218,14 @@
       }
     },
     {
-      "id": 101,
-      "timestamp": "2026-02-09T09:38:47.285107",
+      "id": 99,
+      "timestamp": "2026-02-11T12:12:14.443716",
       "source_utp": "444",
       "target_utp": "255",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.55h",
       "details": {
         "sede_id": 2200251,
+        "is_sede": true,
         "nm_sede": "Alagoinha do Piauí",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -268,13 +236,14 @@
       }
     },
     {
-      "id": 102,
-      "timestamp": "2026-02-09T09:38:47.310442",
+      "id": 100,
+      "timestamp": "2026-02-11T12:12:14.587102",
       "source_utp": "319",
       "target_utp": "674",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.73h",
       "details": {
         "sede_id": 2307601,
+        "is_sede": true,
         "nm_sede": "Limoeiro do Norte",
         "municipalities_moved": 7,
         "score_origem": 0,
@@ -285,13 +254,14 @@
       }
     },
     {
-      "id": 103,
-      "timestamp": "2026-02-09T09:38:47.362334",
+      "id": 101,
+      "timestamp": "2026-02-11T12:12:14.612683",
       "source_utp": "435",
       "target_utp": "557",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.95h",
       "details": {
         "sede_id": 2302602,
+        "is_sede": true,
         "nm_sede": "Camocim",
         "municipalities_moved": 7,
         "score_origem": 0,
@@ -302,13 +272,14 @@
       }
     },
     {
-      "id": 104,
-      "timestamp": "2026-02-09T09:38:47.376848",
+      "id": 102,
+      "timestamp": "2026-02-11T12:12:14.623518",
       "source_utp": "279",
       "target_utp": "111",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.09h",
       "details": {
         "sede_id": 2303501,
+        "is_sede": true,
         "nm_sede": "Cascavel",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -319,13 +290,14 @@
       }
     },
     {
-      "id": 105,
-      "timestamp": "2026-02-09T09:38:47.418910",
+      "id": 103,
+      "timestamp": "2026-02-11T12:12:14.686402",
       "source_utp": "693",
       "target_utp": "728",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.93h",
       "details": {
         "sede_id": 2305803,
+        "is_sede": true,
         "nm_sede": "Ipu",
         "municipalities_moved": 9,
         "score_origem": 0,
@@ -336,13 +308,14 @@
       }
     },
     {
-      "id": 106,
-      "timestamp": "2026-02-09T09:38:47.446471",
+      "id": 104,
+      "timestamp": "2026-02-11T12:12:14.731282",
       "source_utp": "674",
       "target_utp": "319",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.73h",
       "details": {
         "sede_id": 2311801,
+        "is_sede": true,
         "nm_sede": "Russas",
         "municipalities_moved": 10,
         "score_origem": 0,
@@ -353,13 +326,14 @@
       }
     },
     {
-      "id": 107,
-      "timestamp": "2026-02-09T09:38:47.498670",
+      "id": 105,
+      "timestamp": "2026-02-11T12:12:14.768617",
       "source_utp": "755",
       "target_utp": "631",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.06h",
       "details": {
         "sede_id": 2407401,
+        "is_sede": true,
         "nm_sede": "Martins",
         "municipalities_moved": 14,
         "score_origem": 0,
@@ -370,13 +344,14 @@
       }
     },
     {
-      "id": 108,
-      "timestamp": "2026-02-09T09:38:47.508483",
+      "id": 106,
+      "timestamp": "2026-02-11T12:12:14.778187",
       "source_utp": "NOVA23",
       "target_utp": "326",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.45h",
       "details": {
         "sede_id": 2512747,
+        "is_sede": true,
         "nm_sede": "Riachão",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -387,13 +362,14 @@
       }
     },
     {
-      "id": 109,
-      "timestamp": "2026-02-09T09:38:47.534882",
+      "id": 107,
+      "timestamp": "2026-02-11T12:12:14.812231",
       "source_utp": "409",
       "target_utp": "366",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.78h",
       "details": {
         "sede_id": 2601607,
+        "is_sede": true,
         "nm_sede": "Belém do São Francisco",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -404,13 +380,14 @@
       }
     },
     {
-      "id": 110,
-      "timestamp": "2026-02-09T09:38:47.571788",
+      "id": 108,
+      "timestamp": "2026-02-11T12:12:14.841700",
       "source_utp": "366",
       "target_utp": "675",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.06h",
       "details": {
         "sede_id": 2603009,
+        "is_sede": true,
         "nm_sede": "Cabrobó",
         "municipalities_moved": 8,
         "score_origem": 0,
@@ -421,13 +398,14 @@
       }
     },
     {
-      "id": 111,
-      "timestamp": "2026-02-09T09:38:47.598150",
+      "id": 109,
+      "timestamp": "2026-02-11T12:12:14.851393",
       "source_utp": "683",
       "target_utp": "253",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.47h",
       "details": {
         "sede_id": 2612604,
+        "is_sede": true,
         "nm_sede": "Santa Maria da Boa Vista",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -438,13 +416,14 @@
       }
     },
     {
-      "id": 112,
-      "timestamp": "2026-02-09T09:38:47.652794",
+      "id": 110,
+      "timestamp": "2026-02-11T12:12:14.915199",
       "source_utp": "NOVA3",
       "target_utp": "209",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.43h",
       "details": {
         "sede_id": 2707305,
+        "is_sede": true,
         "nm_sede": "Porto Calvo",
         "municipalities_moved": 10,
         "score_origem": 0,
@@ -455,30 +434,14 @@
       }
     },
     {
-      "id": 113,
-      "timestamp": "2026-02-09T09:38:47.665549",
-      "source_utp": "602",
-      "target_utp": "623",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.49h",
-      "details": {
-        "sede_id": 2901304,
-        "nm_sede": "Andaraí",
-        "municipalities_moved": 3,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.486086183,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 114,
-      "timestamp": "2026-02-09T09:38:47.679713",
+      "id": 111,
+      "timestamp": "2026-02-11T12:12:14.947077",
       "source_utp": "667",
       "target_utp": "627",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.02h",
       "details": {
         "sede_id": 2904605,
+        "is_sede": true,
         "nm_sede": "Brumado",
         "municipalities_moved": 4,
         "score_origem": 0,
@@ -489,13 +452,14 @@
       }
     },
     {
-      "id": 115,
-      "timestamp": "2026-02-09T09:38:47.711510",
+      "id": 112,
+      "timestamp": "2026-02-11T12:12:14.980400",
       "source_utp": "431",
       "target_utp": "520",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.76h",
       "details": {
         "sede_id": 2905008,
+        "is_sede": true,
         "nm_sede": "Caculé",
         "municipalities_moved": 12,
         "score_origem": 0,
@@ -506,13 +470,14 @@
       }
     },
     {
-      "id": 116,
-      "timestamp": "2026-02-09T09:38:47.780161",
+      "id": 113,
+      "timestamp": "2026-02-11T12:12:14.999188",
       "source_utp": "432",
       "target_utp": "520",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.64h",
       "details": {
         "sede_id": 2905206,
+        "is_sede": true,
         "nm_sede": "Caetité",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -523,13 +488,14 @@
       }
     },
     {
-      "id": 117,
-      "timestamp": "2026-02-09T09:38:47.796888",
+      "id": 114,
+      "timestamp": "2026-02-11T12:12:15.013581",
       "source_utp": "501",
       "target_utp": "362",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.49h",
       "details": {
         "sede_id": 2910404,
+        "is_sede": true,
         "nm_sede": "Encruzilhada",
         "municipalities_moved": 4,
         "score_origem": 0,
@@ -540,13 +506,14 @@
       }
     },
     {
-      "id": 118,
-      "timestamp": "2026-02-09T09:38:47.909424",
+      "id": 115,
+      "timestamp": "2026-02-11T12:12:15.086480",
       "source_utp": "159",
       "target_utp": "126",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.59h",
       "details": {
         "sede_id": 2914802,
+        "is_sede": true,
         "nm_sede": "Itabuna",
         "municipalities_moved": 20,
         "score_origem": 0,
@@ -557,13 +524,14 @@
       }
     },
     {
-      "id": 119,
-      "timestamp": "2026-02-09T09:38:47.919746",
+      "id": 116,
+      "timestamp": "2026-02-11T12:12:15.098642",
       "source_utp": "699",
       "target_utp": "538",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.20h",
       "details": {
         "sede_id": 2929255,
+        "is_sede": true,
         "nm_sede": "São Gabriel",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -574,15 +542,16 @@
       }
     },
     {
-      "id": 120,
-      "timestamp": "2026-02-09T09:38:47.943432",
+      "id": 117,
+      "timestamp": "2026-02-11T12:12:15.144493",
       "source_utp": "623",
       "target_utp": "726",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.72h",
       "details": {
         "sede_id": 2929909,
+        "is_sede": true,
         "nm_sede": "Seabra",
-        "municipalities_moved": 8,
+        "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 0.715251803,
@@ -591,13 +560,14 @@
       }
     },
     {
-      "id": 121,
-      "timestamp": "2026-02-09T09:38:47.966636",
+      "id": 118,
+      "timestamp": "2026-02-11T12:12:15.186662",
       "source_utp": "373",
       "target_utp": "556",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.76h",
       "details": {
         "sede_id": 3101706,
+        "is_sede": true,
         "nm_sede": "Almenara",
         "municipalities_moved": 8,
         "score_origem": 0,
@@ -608,13 +578,14 @@
       }
     },
     {
-      "id": 122,
-      "timestamp": "2026-02-09T09:38:47.989191",
+      "id": 119,
+      "timestamp": "2026-02-11T12:12:15.209597",
       "source_utp": "21",
       "target_utp": "352",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.68h",
       "details": {
         "sede_id": 3103504,
+        "is_sede": true,
         "nm_sede": "Araguari",
         "municipalities_moved": 8,
         "score_origem": 1,
@@ -625,13 +596,14 @@
       }
     },
     {
-      "id": 123,
-      "timestamp": "2026-02-09T09:38:48.031422",
+      "id": 120,
+      "timestamp": "2026-02-11T12:12:15.235714",
       "source_utp": "29",
       "target_utp": "351",
       "reason": "Sede consolidation (full UTP): Score 2->2, Travel 1.77h",
       "details": {
         "sede_id": 3104007,
+        "is_sede": true,
         "nm_sede": "Araxá",
         "municipalities_moved": 9,
         "score_origem": 2,
@@ -642,13 +614,14 @@
       }
     },
     {
-      "id": 124,
-      "timestamp": "2026-02-09T09:38:48.140945",
+      "id": 121,
+      "timestamp": "2026-02-11T12:12:15.307866",
       "source_utp": "35",
       "target_utp": "189",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.46h",
       "details": {
         "sede_id": 3105608,
+        "is_sede": true,
         "nm_sede": "Barbacena",
         "municipalities_moved": 19,
         "score_origem": 1,
@@ -659,13 +632,14 @@
       }
     },
     {
-      "id": 125,
-      "timestamp": "2026-02-09T09:38:48.162292",
+      "id": 122,
+      "timestamp": "2026-02-11T12:12:15.355307",
       "source_utp": "413",
       "target_utp": "558",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.44h",
       "details": {
         "sede_id": 3108552,
+        "is_sede": true,
         "nm_sede": "Brasilândia de Minas",
         "municipalities_moved": 7,
         "score_origem": 0,
@@ -676,13 +650,14 @@
       }
     },
     {
-      "id": 126,
-      "timestamp": "2026-02-09T09:38:48.189493",
+      "id": 123,
+      "timestamp": "2026-02-11T12:12:15.419839",
       "source_utp": "417",
       "target_utp": "197",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.84h",
       "details": {
         "sede_id": 3108602,
+        "is_sede": true,
         "nm_sede": "Brasília de Minas",
         "municipalities_moved": 10,
         "score_origem": 0,
@@ -693,13 +668,14 @@
       }
     },
     {
-      "id": 127,
-      "timestamp": "2026-02-09T09:38:48.207918",
+      "id": 124,
+      "timestamp": "2026-02-11T12:12:15.440285",
       "source_utp": "83",
       "target_utp": "313",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.47h",
       "details": {
         "sede_id": 3115508,
+        "is_sede": true,
         "nm_sede": "Caxambu",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -710,13 +686,14 @@
       }
     },
     {
-      "id": 128,
-      "timestamp": "2026-02-09T09:38:48.263697",
+      "id": 125,
+      "timestamp": "2026-02-11T12:12:15.482674",
       "source_utp": "101",
       "target_utp": "236",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.00h",
       "details": {
         "sede_id": 3120904,
+        "is_sede": true,
         "nm_sede": "Curvelo",
         "municipalities_moved": 14,
         "score_origem": 1,
@@ -727,13 +704,14 @@
       }
     },
     {
-      "id": 129,
-      "timestamp": "2026-02-09T09:38:48.283120",
+      "id": 126,
+      "timestamp": "2026-02-11T12:12:15.516944",
       "source_utp": "546",
       "target_utp": "688",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.16h",
       "details": {
         "sede_id": 3134202,
+        "is_sede": true,
         "nm_sede": "Ituiutaba",
         "municipalities_moved": 5,
         "score_origem": 1,
@@ -744,13 +722,14 @@
       }
     },
     {
-      "id": 130,
-      "timestamp": "2026-02-09T09:38:48.339101",
+      "id": 127,
+      "timestamp": "2026-02-11T12:12:15.552167",
       "source_utp": "558",
       "target_utp": "625",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.40h",
       "details": {
         "sede_id": 3136306,
+        "is_sede": true,
         "nm_sede": "João Pinheiro",
         "municipalities_moved": 9,
         "score_origem": 0,
@@ -761,13 +740,14 @@
       }
     },
     {
-      "id": 131,
-      "timestamp": "2026-02-09T09:38:48.378947",
+      "id": 128,
+      "timestamp": "2026-02-11T12:12:15.590954",
       "source_utp": "8",
       "target_utp": "221",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.96h",
       "details": {
         "sede_id": 3138401,
+        "is_sede": true,
         "nm_sede": "Leopoldina",
         "municipalities_moved": 8,
         "score_origem": 1,
@@ -778,13 +758,14 @@
       }
     },
     {
-      "id": 132,
-      "timestamp": "2026-02-09T09:38:48.405775",
+      "id": 129,
+      "timestamp": "2026-02-11T12:12:15.686420",
       "source_utp": "322",
       "target_utp": "189",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.95h",
       "details": {
         "sede_id": 3138609,
+        "is_sede": true,
         "nm_sede": "Lima Duarte",
         "municipalities_moved": 10,
         "score_origem": 0,
@@ -795,13 +776,14 @@
       }
     },
     {
-      "id": 133,
-      "timestamp": "2026-02-09T09:38:48.415695",
+      "id": 130,
+      "timestamp": "2026-02-11T12:12:15.697614",
       "source_utp": "213",
       "target_utp": "323",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.51h",
       "details": {
         "sede_id": 3141108,
+        "is_sede": true,
         "nm_sede": "Matozinhos",
         "municipalities_moved": 2,
         "score_origem": 1,
@@ -812,13 +794,14 @@
       }
     },
     {
-      "id": 134,
-      "timestamp": "2026-02-09T09:38:48.436602",
+      "id": 131,
+      "timestamp": "2026-02-11T12:12:15.719937",
       "source_utp": "76",
       "target_utp": "335",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.50h",
       "details": {
         "sede_id": 3146305,
+        "is_sede": true,
         "nm_sede": "Padre Paraíso",
         "municipalities_moved": 7,
         "score_origem": 0,
@@ -829,13 +812,14 @@
       }
     },
     {
-      "id": 135,
-      "timestamp": "2026-02-09T09:38:48.465197",
+      "id": 132,
+      "timestamp": "2026-02-11T12:12:15.735158",
       "source_utp": "16",
       "target_utp": "251",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.44h",
       "details": {
         "sede_id": 4301305,
+        "is_sede": true,
         "nm_sede": "Arroio Grande",
         "municipalities_moved": 4,
         "score_origem": 0,
@@ -846,13 +830,14 @@
       }
     },
     {
-      "id": 136,
-      "timestamp": "2026-02-09T09:38:48.475825",
+      "id": 133,
+      "timestamp": "2026-02-11T12:12:15.746788",
       "source_utp": "97",
       "target_utp": "197",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.75h",
       "details": {
         "sede_id": 3150570,
+        "is_sede": true,
         "nm_sede": "Pintópolis",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -863,13 +848,14 @@
       }
     },
     {
-      "id": 137,
-      "timestamp": "2026-02-09T09:38:48.536796",
+      "id": 134,
+      "timestamp": "2026-02-11T12:12:15.810203",
       "source_utp": "197",
       "target_utp": "97",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.75h",
       "details": {
         "sede_id": 3161106,
+        "is_sede": true,
         "nm_sede": "São Francisco",
         "municipalities_moved": 16,
         "score_origem": 0,
@@ -880,13 +866,14 @@
       }
     },
     {
-      "id": 138,
-      "timestamp": "2026-02-09T09:38:48.620856",
+      "id": 135,
+      "timestamp": "2026-02-11T12:12:15.904120",
       "source_utp": "351",
       "target_utp": "352",
       "reason": "Sede consolidation (full UTP): Score 2->2, Travel 1.26h",
       "details": {
         "sede_id": 3170107,
+        "is_sede": true,
         "nm_sede": "Uberaba",
         "municipalities_moved": 17,
         "score_origem": 2,
@@ -897,13 +884,14 @@
       }
     },
     {
-      "id": 139,
-      "timestamp": "2026-02-09T09:38:48.693172",
+      "id": 136,
+      "timestamp": "2026-02-11T12:12:15.990200",
       "source_utp": "92",
       "target_utp": "198",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.41h",
       "details": {
         "sede_id": 3201506,
+        "is_sede": true,
         "nm_sede": "Colatina",
         "municipalities_moved": 25,
         "score_origem": 1,
@@ -914,13 +902,14 @@
       }
     },
     {
-      "id": 140,
-      "timestamp": "2026-02-09T09:38:48.711773",
+      "id": 137,
+      "timestamp": "2026-02-11T12:12:16.004381",
       "source_utp": "767",
       "target_utp": "364",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.61h",
       "details": {
         "sede_id": 3300100,
+        "is_sede": true,
         "nm_sede": "Angra dos Reis",
         "municipalities_moved": 3,
         "score_origem": 1,
@@ -931,13 +920,14 @@
       }
     },
     {
-      "id": 141,
-      "timestamp": "2026-02-09T09:38:48.731218",
+      "id": 138,
+      "timestamp": "2026-02-11T12:12:16.038885",
       "source_utp": "356",
       "target_utp": "364",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.05h",
       "details": {
         "sede_id": 3306107,
+        "is_sede": true,
         "nm_sede": "Valença",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -948,13 +938,14 @@
       }
     },
     {
-      "id": 142,
-      "timestamp": "2026-02-09T09:38:48.746615",
+      "id": 139,
+      "timestamp": "2026-02-11T12:12:16.053404",
       "source_utp": "215",
       "target_utp": "364",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.82h",
       "details": {
         "sede_id": 3306206,
+        "is_sede": true,
         "nm_sede": "Vassouras",
         "municipalities_moved": 3,
         "score_origem": 1,
@@ -965,13 +956,14 @@
       }
     },
     {
-      "id": 143,
-      "timestamp": "2026-02-09T09:38:48.781432",
+      "id": 140,
+      "timestamp": "2026-02-11T12:12:16.067130",
       "source_utp": "31",
       "target_utp": "NOVA15",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.66h",
       "details": {
         "sede_id": 3503802,
+        "is_sede": true,
         "nm_sede": "Artur Nogueira",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -982,13 +974,14 @@
       }
     },
     {
-      "id": 144,
-      "timestamp": "2026-02-09T09:38:48.823573",
+      "id": 141,
+      "timestamp": "2026-02-11T12:12:16.096884",
       "source_utp": "36",
       "target_utp": "180",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.51h",
       "details": {
         "sede_id": 3505302,
+        "is_sede": true,
         "nm_sede": "Barra Bonita",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -999,13 +992,14 @@
       }
     },
     {
-      "id": 145,
-      "timestamp": "2026-02-09T09:38:48.849146",
+      "id": 142,
+      "timestamp": "2026-02-11T12:12:16.159020",
       "source_utp": "45",
       "target_utp": "301",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.31h",
       "details": {
         "sede_id": 3506508,
+        "is_sede": true,
         "nm_sede": "Birigui",
         "municipalities_moved": 9,
         "score_origem": 1,
@@ -1016,13 +1010,14 @@
       }
     },
     {
-      "id": 146,
-      "timestamp": "2026-02-09T09:38:48.863475",
+      "id": 143,
+      "timestamp": "2026-02-11T12:12:16.193021",
       "source_utp": "200",
       "target_utp": "12",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.31h",
       "details": {
         "sede_id": 3508603,
+        "is_sede": true,
         "nm_sede": "Cachoeira Paulista",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1033,13 +1028,14 @@
       }
     },
     {
-      "id": 147,
-      "timestamp": "2026-02-09T09:38:48.890920",
+      "id": 144,
+      "timestamp": "2026-02-11T12:12:16.224620",
       "source_utp": "125",
       "target_utp": "663",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.52h",
       "details": {
         "sede_id": 3509254,
+        "is_sede": true,
         "nm_sede": "Cajati",
         "municipalities_moved": 10,
         "score_origem": 1,
@@ -1050,13 +1046,14 @@
       }
     },
     {
-      "id": 148,
-      "timestamp": "2026-02-09T09:38:48.929104",
+      "id": 145,
+      "timestamp": "2026-02-11T12:12:16.250683",
       "source_utp": "333",
       "target_utp": "312",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.14h",
       "details": {
         "sede_id": 3509700,
+        "is_sede": true,
         "nm_sede": "Campos do Jordão",
         "municipalities_moved": 8,
         "score_origem": 1,
@@ -1067,13 +1064,14 @@
       }
     },
     {
-      "id": 149,
-      "timestamp": "2026-02-09T09:38:48.971395",
+      "id": 146,
+      "timestamp": "2026-02-11T12:12:16.304357",
       "source_utp": "108",
       "target_utp": "365",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.49h",
       "details": {
         "sede_id": 3515509,
+        "is_sede": true,
         "nm_sede": "Fernandópolis",
         "municipalities_moved": 13,
         "score_origem": 1,
@@ -1084,13 +1082,14 @@
       }
     },
     {
-      "id": 150,
-      "timestamp": "2026-02-09T09:38:49.010385",
+      "id": 147,
+      "timestamp": "2026-02-11T12:12:16.321272",
       "source_utp": "165",
       "target_utp": "332",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.63h",
       "details": {
         "sede_id": 3522307,
+        "is_sede": true,
         "nm_sede": "Itapetininga",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1101,13 +1100,14 @@
       }
     },
     {
-      "id": 151,
-      "timestamp": "2026-02-09T09:38:49.024231",
+      "id": 148,
+      "timestamp": "2026-02-11T12:12:16.337994",
       "source_utp": "168",
       "target_utp": "NOVA15",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.48h",
       "details": {
         "sede_id": 3523404,
+        "is_sede": true,
         "nm_sede": "Itatiba",
         "municipalities_moved": 2,
         "score_origem": 1,
@@ -1118,13 +1118,14 @@
       }
     },
     {
-      "id": 152,
-      "timestamp": "2026-02-09T09:38:49.090245",
+      "id": 149,
+      "timestamp": "2026-02-11T12:12:16.474786",
       "source_utp": "175",
       "target_utp": "294",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.58h",
       "details": {
         "sede_id": 3524808,
+        "is_sede": true,
         "nm_sede": "Jales",
         "municipalities_moved": 19,
         "score_origem": 1,
@@ -1135,13 +1136,14 @@
       }
     },
     {
-      "id": 153,
-      "timestamp": "2026-02-09T09:38:49.102351",
+      "id": 150,
+      "timestamp": "2026-02-11T12:12:16.488610",
       "source_utp": "707",
       "target_utp": "281",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.74h",
       "details": {
         "sede_id": 3534302,
+        "is_sede": true,
         "nm_sede": "Orlândia",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -1152,13 +1154,14 @@
       }
     },
     {
-      "id": 154,
-      "timestamp": "2026-02-09T09:38:49.120862",
+      "id": 151,
+      "timestamp": "2026-02-11T12:12:16.510444",
       "source_utp": "256",
       "target_utp": "317",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.61h",
       "details": {
         "sede_id": 3538709,
+        "is_sede": true,
         "nm_sede": "Piracicaba",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -1169,13 +1172,14 @@
       }
     },
     {
-      "id": 155,
-      "timestamp": "2026-02-09T09:38:49.152678",
+      "id": 152,
+      "timestamp": "2026-02-11T12:12:16.529547",
       "source_utp": "258",
       "target_utp": "274",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.47h",
       "details": {
         "sede_id": 3539202,
+        "is_sede": true,
         "nm_sede": "Pirapozinho",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -1186,13 +1190,14 @@
       }
     },
     {
-      "id": 156,
-      "timestamp": "2026-02-09T09:38:49.169369",
+      "id": 153,
+      "timestamp": "2026-02-11T12:12:16.548923",
       "source_utp": "226",
       "target_utp": "462",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.45h",
       "details": {
         "sede_id": 3544251,
+        "is_sede": true,
         "nm_sede": "Rosana",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -1203,64 +1208,14 @@
       }
     },
     {
-      "id": 157,
-      "timestamp": "2026-02-09T09:38:49.174635",
-      "source_utp": "525",
-      "target_utp": "375",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.67h",
-      "details": {
-        "sede_id": 1503101,
-        "nm_sede": "GurupÃ¡",
-        "municipalities_moved": 0,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.67,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 158,
-      "timestamp": "2026-02-09T09:38:49.179821",
-      "source_utp": "525",
-      "target_utp": "375",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.67h",
-      "details": {
-        "sede_id": 1503101,
-        "nm_sede": "GurupÃ¡",
-        "municipalities_moved": 0,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.67,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 159,
-      "timestamp": "2026-02-09T09:38:49.185079",
-      "source_utp": "525",
-      "target_utp": "375",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.67h",
-      "details": {
-        "sede_id": 1503101,
-        "nm_sede": "GurupÃ¡",
-        "municipalities_moved": 0,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.67,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 160,
-      "timestamp": "2026-02-09T09:38:49.203774",
+      "id": 154,
+      "timestamp": "2026-02-11T12:12:16.563570",
       "source_utp": "712",
       "target_utp": "50",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.39h",
       "details": {
         "sede_id": 3550100,
+        "is_sede": true,
         "nm_sede": "São Manuel",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -1271,13 +1226,14 @@
       }
     },
     {
-      "id": 161,
-      "timestamp": "2026-02-09T09:38:49.224435",
+      "id": 155,
+      "timestamp": "2026-02-11T12:12:16.602080",
       "source_utp": "332",
       "target_utp": "48",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.38h",
       "details": {
         "sede_id": 3554003,
+        "is_sede": true,
         "nm_sede": "Tatuí",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -1288,13 +1244,14 @@
       }
     },
     {
-      "id": 162,
-      "timestamp": "2026-02-09T09:38:49.271652",
+      "id": 156,
+      "timestamp": "2026-02-11T12:12:16.628672",
       "source_utp": "402",
       "target_utp": "481",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.55h",
       "details": {
         "sede_id": 4102406,
+        "is_sede": true,
         "nm_sede": "Bandeirantes",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -1305,13 +1262,14 @@
       }
     },
     {
-      "id": 163,
-      "timestamp": "2026-02-09T09:38:49.303412",
+      "id": 157,
+      "timestamp": "2026-02-11T12:12:16.644889",
       "source_utp": "661",
       "target_utp": "79",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.13h",
       "details": {
         "sede_id": 4104600,
+        "is_sede": true,
         "nm_sede": "Capitão Leônidas Marques",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1322,13 +1280,14 @@
       }
     },
     {
-      "id": 164,
-      "timestamp": "2026-02-09T09:38:49.316040",
+      "id": 158,
+      "timestamp": "2026-02-11T12:12:16.660594",
       "source_utp": "460",
       "target_utp": "264",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.53h",
       "details": {
         "sede_id": 4104907,
+        "is_sede": true,
         "nm_sede": "Castro",
         "municipalities_moved": 3,
         "score_origem": 1,
@@ -1339,13 +1298,14 @@
       }
     },
     {
-      "id": 165,
-      "timestamp": "2026-02-09T09:38:49.337574",
+      "id": 159,
+      "timestamp": "2026-02-11T12:12:16.714419",
       "source_utp": "384",
       "target_utp": "230",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.44h",
       "details": {
         "sede_id": 4111803,
+        "is_sede": true,
         "nm_sede": "Jacarezinho",
         "municipalities_moved": 7,
         "score_origem": 1,
@@ -1356,13 +1316,14 @@
       }
     },
     {
-      "id": 166,
-      "timestamp": "2026-02-09T09:38:49.351670",
+      "id": 160,
+      "timestamp": "2026-02-11T12:12:16.746201",
       "source_utp": "177",
       "target_utp": "211",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.39h",
       "details": {
         "sede_id": 4114203,
+        "is_sede": true,
         "nm_sede": "Mandaguari",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1373,13 +1334,14 @@
       }
     },
     {
-      "id": 167,
-      "timestamp": "2026-02-09T09:38:49.373239",
+      "id": 161,
+      "timestamp": "2026-02-11T12:12:16.768682",
       "source_utp": "582",
       "target_utp": "340",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.76h",
       "details": {
         "sede_id": 4114609,
+        "is_sede": true,
         "nm_sede": "Marechal Cândido Rondon",
         "municipalities_moved": 7,
         "score_origem": 1,
@@ -1390,13 +1352,14 @@
       }
     },
     {
-      "id": 168,
-      "timestamp": "2026-02-09T09:38:49.406964",
+      "id": 162,
+      "timestamp": "2026-02-11T12:12:16.787639",
       "source_utp": "624",
       "target_utp": "340",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.02h",
       "details": {
         "sede_id": 4117909,
+        "is_sede": true,
         "nm_sede": "Palotina",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -1407,13 +1370,14 @@
       }
     },
     {
-      "id": 169,
-      "timestamp": "2026-02-09T09:38:49.417486",
+      "id": 163,
+      "timestamp": "2026-02-11T12:12:16.798071",
       "source_utp": "212",
       "target_utp": "234",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.58h",
       "details": {
         "sede_id": 4119954,
+        "is_sede": true,
         "nm_sede": "Pontal do Paraná",
         "municipalities_moved": 2,
         "score_origem": 1,
@@ -1424,13 +1388,14 @@
       }
     },
     {
-      "id": 170,
-      "timestamp": "2026-02-09T09:38:49.428184",
+      "id": 164,
+      "timestamp": "2026-02-11T12:12:16.808834",
       "source_utp": "229",
       "target_utp": "191",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.80h",
       "details": {
         "sede_id": 4211751,
+        "is_sede": true,
         "nm_sede": "Otacílio Costa",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1441,13 +1406,14 @@
       }
     },
     {
-      "id": 171,
-      "timestamp": "2026-02-09T09:38:49.452849",
+      "id": 165,
+      "timestamp": "2026-02-11T12:12:16.828059",
       "source_utp": "304",
       "target_utp": "88",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.86h",
       "details": {
         "sede_id": 4212908,
+        "is_sede": true,
         "nm_sede": "Pinhalzinho",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -1458,13 +1424,14 @@
       }
     },
     {
-      "id": 172,
-      "timestamp": "2026-02-09T09:38:49.468624",
+      "id": 166,
+      "timestamp": "2026-02-11T12:12:16.859949",
       "source_utp": "706",
       "target_utp": "191",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.23h",
       "details": {
         "sede_id": 4216503,
+        "is_sede": true,
         "nm_sede": "São Joaquim",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1475,13 +1442,14 @@
       }
     },
     {
-      "id": 173,
-      "timestamp": "2026-02-09T09:38:49.481788",
+      "id": 167,
+      "timestamp": "2026-02-11T12:12:16.871124",
       "source_utp": "372",
       "target_utp": "672",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.55h",
       "details": {
         "sede_id": 4300406,
+        "is_sede": true,
         "nm_sede": "Alegrete",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1492,13 +1460,14 @@
       }
     },
     {
-      "id": 174,
-      "timestamp": "2026-02-09T09:38:49.530404",
+      "id": 168,
+      "timestamp": "2026-02-11T12:12:16.891176",
       "source_utp": "43",
       "target_utp": "84",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.52h",
       "details": {
         "sede_id": 4302105,
+        "is_sede": true,
         "nm_sede": "Bento Gonçalves",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -1509,13 +1478,14 @@
       }
     },
     {
-      "id": 175,
-      "timestamp": "2026-02-09T09:38:49.563002",
+      "id": 169,
+      "timestamp": "2026-02-11T12:12:16.914706",
       "source_utp": "427",
       "target_utp": "717",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.62h",
       "details": {
         "sede_id": 4302808,
+        "is_sede": true,
         "nm_sede": "Caçapava do Sul",
         "municipalities_moved": 4,
         "score_origem": 0,
@@ -1526,13 +1496,14 @@
       }
     },
     {
-      "id": 176,
-      "timestamp": "2026-02-09T09:38:49.594091",
+      "id": 170,
+      "timestamp": "2026-02-11T12:12:16.984439",
       "source_utp": "454",
       "target_utp": "240",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.75h",
       "details": {
         "sede_id": 4304705,
+        "is_sede": true,
         "nm_sede": "Carazinho",
         "municipalities_moved": 11,
         "score_origem": 0,
@@ -1543,13 +1514,14 @@
       }
     },
     {
-      "id": 177,
-      "timestamp": "2026-02-09T09:38:49.604769",
+      "id": 171,
+      "timestamp": "2026-02-11T12:12:17.011778",
       "source_utp": "491",
       "target_utp": "535",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.81h",
       "details": {
         "sede_id": 4306106,
+        "is_sede": true,
         "nm_sede": "Cruz Alta",
         "municipalities_moved": 2,
         "score_origem": 1,
@@ -1560,13 +1532,14 @@
       }
     },
     {
-      "id": 178,
-      "timestamp": "2026-02-09T09:38:49.659328",
+      "id": 172,
+      "timestamp": "2026-02-11T12:12:17.052171",
       "source_utp": "535",
       "target_utp": "299",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.87h",
       "details": {
         "sede_id": 4310207,
+        "is_sede": true,
         "nm_sede": "Ijuí",
         "municipalities_moved": 15,
         "score_origem": 1,
@@ -1577,13 +1550,14 @@
       }
     },
     {
-      "id": 179,
-      "timestamp": "2026-02-09T09:38:49.670204",
+      "id": 173,
+      "timestamp": "2026-02-11T12:12:17.062574",
       "source_utp": "144",
       "target_utp": "156",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.60h",
       "details": {
         "sede_id": 4310603,
+        "is_sede": true,
         "nm_sede": "Itaqui",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1594,13 +1568,14 @@
       }
     },
     {
-      "id": 180,
-      "timestamp": "2026-02-09T09:38:49.683335",
+      "id": 174,
+      "timestamp": "2026-02-11T12:12:17.075080",
       "source_utp": "596",
       "target_utp": "267",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.82h",
       "details": {
         "sede_id": 4312401,
+        "is_sede": true,
         "nm_sede": "Montenegro",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -1611,13 +1586,14 @@
       }
     },
     {
-      "id": 181,
-      "timestamp": "2026-02-09T09:38:49.710501",
+      "id": 175,
+      "timestamp": "2026-02-11T12:12:17.111958",
       "source_utp": "228",
       "target_utp": "267",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.60h",
       "details": {
         "sede_id": 4313409,
+        "is_sede": true,
         "nm_sede": "Novo Hamburgo",
         "municipalities_moved": 7,
         "score_origem": 1,
@@ -1628,13 +1604,14 @@
       }
     },
     {
-      "id": 182,
-      "timestamp": "2026-02-09T09:38:49.723882",
+      "id": 176,
+      "timestamp": "2026-02-11T12:12:17.122949",
       "source_utp": "286",
       "target_utp": "251",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.07h",
       "details": {
         "sede_id": 4315602,
+        "is_sede": true,
         "nm_sede": "Rio Grande",
         "municipalities_moved": 2,
         "score_origem": 1,
@@ -1645,13 +1622,14 @@
       }
     },
     {
-      "id": 183,
-      "timestamp": "2026-02-09T09:38:49.762248",
+      "id": 177,
+      "timestamp": "2026-02-11T12:12:17.142434",
       "source_utp": "672",
       "target_utp": "497",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.90h",
       "details": {
         "sede_id": 4316402,
+        "is_sede": true,
         "nm_sede": "Rosário do Sul",
         "municipalities_moved": 6,
         "score_origem": 0,
@@ -1662,13 +1640,14 @@
       }
     },
     {
-      "id": 184,
-      "timestamp": "2026-02-09T09:38:49.851525",
+      "id": 178,
+      "timestamp": "2026-02-11T12:12:17.173855",
       "source_utp": "293",
       "target_utp": "359",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.48h",
       "details": {
         "sede_id": 4316808,
+        "is_sede": true,
         "nm_sede": "Santa Cruz do Sul",
         "municipalities_moved": 8,
         "score_origem": 1,
@@ -1679,13 +1658,14 @@
       }
     },
     {
-      "id": 185,
-      "timestamp": "2026-02-09T09:38:49.896462",
+      "id": 179,
+      "timestamp": "2026-02-11T12:12:17.260622",
       "source_utp": "687",
       "target_utp": "299",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.80h",
       "details": {
         "sede_id": 4317202,
+        "is_sede": true,
         "nm_sede": "Santa Rosa",
         "municipalities_moved": 15,
         "score_origem": 0,
@@ -1696,30 +1676,14 @@
       }
     },
     {
-      "id": 186,
-      "timestamp": "2026-02-09T09:38:49.924889",
-      "source_utp": "691",
-      "target_utp": "711",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.95h",
-      "details": {
-        "sede_id": 4317400,
-        "nm_sede": "Santiago",
-        "municipalities_moved": 9,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.954407941,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 187,
-      "timestamp": "2026-02-09T09:38:49.962673",
+      "id": 180,
+      "timestamp": "2026-02-11T12:12:17.283290",
       "source_utp": "717",
       "target_utp": "497",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.87h",
       "details": {
         "sede_id": 4319604,
+        "is_sede": true,
         "nm_sede": "São Sepé",
         "municipalities_moved": 7,
         "score_origem": 0,
@@ -1730,13 +1694,14 @@
       }
     },
     {
-      "id": 188,
-      "timestamp": "2026-02-09T09:38:49.989392",
+      "id": 181,
+      "timestamp": "2026-02-11T12:12:17.304738",
       "source_utp": "338",
       "target_utp": "193",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.43h",
       "details": {
         "sede_id": 4321451,
+        "is_sede": true,
         "nm_sede": "Teutônia",
         "municipalities_moved": 7,
         "score_origem": 1,
@@ -1747,13 +1712,14 @@
       }
     },
     {
-      "id": 189,
-      "timestamp": "2026-02-09T09:38:50.050963",
+      "id": 182,
+      "timestamp": "2026-02-11T12:12:17.351409",
       "source_utp": "359",
       "target_utp": "293",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.44h",
       "details": {
         "sede_id": 4322608,
+        "is_sede": true,
         "nm_sede": "Venâncio Aires",
         "municipalities_moved": 11,
         "score_origem": 1,
@@ -1764,13 +1730,14 @@
       }
     },
     {
-      "id": 190,
-      "timestamp": "2026-02-09T09:38:50.083077",
+      "id": 183,
+      "timestamp": "2026-02-11T12:12:17.363933",
       "source_utp": "380",
       "target_utp": "148",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.66h",
       "details": {
         "sede_id": 5000609,
+        "is_sede": true,
         "nm_sede": "Amambai",
         "municipalities_moved": 3,
         "score_origem": 0,
@@ -1781,13 +1748,14 @@
       }
     },
     {
-      "id": 191,
-      "timestamp": "2026-02-09T09:38:50.094046",
+      "id": 184,
+      "timestamp": "2026-02-11T12:12:17.374382",
       "source_utp": "386",
       "target_utp": "294",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.51h",
       "details": {
         "sede_id": 5001003,
+        "is_sede": true,
         "nm_sede": "Aparecida do Taboado",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1798,30 +1766,14 @@
       }
     },
     {
-      "id": 192,
-      "timestamp": "2026-02-09T09:38:50.109151",
-      "source_utp": "408",
-      "target_utp": "275",
-      "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.58h",
-      "details": {
-        "sede_id": 5001904,
-        "nm_sede": "Bataguassu",
-        "municipalities_moved": 4,
-        "score_origem": 0,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.576729488,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 193,
-      "timestamp": "2026-02-09T09:38:50.128635",
+      "id": 185,
+      "timestamp": "2026-02-11T12:12:17.401102",
       "source_utp": "103",
       "target_utp": "148",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.69h",
       "details": {
         "sede_id": 5003702,
+        "is_sede": true,
         "nm_sede": "Dourados",
         "municipalities_moved": 6,
         "score_origem": 1,
@@ -1832,13 +1784,14 @@
       }
     },
     {
-      "id": 194,
-      "timestamp": "2026-02-09T09:38:50.139231",
+      "id": 186,
+      "timestamp": "2026-02-11T12:12:17.413183",
       "source_utp": "580",
       "target_utp": "148",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.97h",
       "details": {
         "sede_id": 5005400,
+        "is_sede": true,
         "nm_sede": "Maracaju",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1849,13 +1802,14 @@
       }
     },
     {
-      "id": 195,
-      "timestamp": "2026-02-09T09:38:50.156601",
+      "id": 187,
+      "timestamp": "2026-02-11T12:12:17.451808",
       "source_utp": "612",
       "target_utp": "784",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.26h",
       "details": {
         "sede_id": 5100201,
+        "is_sede": true,
         "nm_sede": "Água Boa",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -1866,13 +1820,14 @@
       }
     },
     {
-      "id": 196,
-      "timestamp": "2026-02-09T09:38:50.173163",
+      "id": 188,
+      "timestamp": "2026-02-11T12:12:17.492791",
       "source_utp": "464",
       "target_utp": "98",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.69h",
       "details": {
         "sede_id": 5103007,
+        "is_sede": true,
         "nm_sede": "Chapada dos Guimarães",
         "municipalities_moved": 5,
         "score_origem": 0,
@@ -1883,13 +1838,14 @@
       }
     },
     {
-      "id": 197,
-      "timestamp": "2026-02-09T09:38:50.208940",
+      "id": 189,
+      "timestamp": "2026-02-11T12:12:17.507998",
       "source_utp": "572",
       "target_utp": "725",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.93h",
       "details": {
         "sede_id": 5105259,
+        "is_sede": true,
         "nm_sede": "Lucas do Rio Verde",
         "municipalities_moved": 4,
         "score_origem": 1,
@@ -1900,13 +1856,14 @@
       }
     },
     {
-      "id": 198,
-      "timestamp": "2026-02-09T09:38:50.243889",
+      "id": 190,
+      "timestamp": "2026-02-11T12:12:17.536836",
       "source_utp": "725",
       "target_utp": "324",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.11h",
       "details": {
         "sede_id": 5107925,
+        "is_sede": true,
         "nm_sede": "Sorriso",
         "municipalities_moved": 10,
         "score_origem": 1,
@@ -1917,30 +1874,14 @@
       }
     },
     {
-      "id": 199,
-      "timestamp": "2026-02-09T09:38:50.266293",
-      "source_utp": "555",
-      "target_utp": "466",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.75h",
-      "details": {
-        "sede_id": 5205471,
-        "nm_sede": "Chapadão do Céu",
-        "municipalities_moved": 6,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.74646821,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 200,
-      "timestamp": "2026-02-09T09:38:50.290053",
+      "id": 191,
+      "timestamp": "2026-02-11T12:12:17.547615",
       "source_utp": "536",
       "target_utp": "642",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.83h",
       "details": {
         "sede_id": 5210109,
+        "is_sede": true,
         "nm_sede": "Ipameri",
         "municipalities_moved": 2,
         "score_origem": 0,
@@ -1951,15 +1892,16 @@
       }
     },
     {
-      "id": 201,
-      "timestamp": "2026-02-09T09:38:50.296155",
+      "id": 192,
+      "timestamp": "2026-02-11T12:12:17.566679",
       "source_utp": "555",
       "target_utp": "287",
       "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.27h",
       "details": {
         "sede_id": 5211909,
+        "is_sede": true,
         "nm_sede": "Jataí",
-        "municipalities_moved": 0,
+        "municipalities_moved": 6,
         "score_origem": 1,
         "score_destino": 2,
         "tempo_viagem_h": 1.266105458,
@@ -1968,13 +1910,14 @@
       }
     },
     {
-      "id": 202,
-      "timestamp": "2026-02-09T09:38:50.324992",
+      "id": 193,
+      "timestamp": "2026-02-11T12:12:17.580271",
       "source_utp": "590",
       "target_utp": "555",
       "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.49h",
       "details": {
         "sede_id": 5213103,
+        "is_sede": true,
         "nm_sede": "Mineiros",
         "municipalities_moved": 3,
         "score_origem": 1,
@@ -1985,13 +1928,14 @@
       }
     },
     {
-      "id": 203,
-      "timestamp": "2026-02-09T09:38:50.364534",
+      "id": 194,
+      "timestamp": "2026-02-11T12:12:17.619640",
       "source_utp": "680",
       "target_utp": "287",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.56h",
       "details": {
         "sede_id": 5219308,
+        "is_sede": true,
         "nm_sede": "Santa Helena de Goiás",
         "municipalities_moved": 7,
         "score_origem": 0,

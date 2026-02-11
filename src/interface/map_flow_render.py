@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa", 
                                   global_colors=None, gdf_rm=None, show_rm_borders=False, 
                                   show_state_borders=False, gdf_states=None,
-                                  PASTEL_PALETTE=None, df_impedance=None):
+                                  PASTEL_PALETTE=None, df_impedance=None, scroll_wheel_zoom=True):
     """
     Renderiza mapa folium com popups informativos de fluxo.
     
@@ -28,6 +28,7 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
         gdf_states: GeoDataFrame opcional com contornos de Estados pré-calculados
         PASTEL_PALETTE: Lista de cores para coloração
         df_impedance: Optional DataFrame com dados de tempo de viagem (origem_6, destino_6, tempo_horas)
+        scroll_wheel_zoom: Se deve habilitar zoom com scroll do mouse (default True)
     """
     if gdf_filtered is None or gdf_filtered.empty:
         return None
@@ -76,7 +77,8 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
         zoom_start=4,
         tiles="CartoDB positron",
         prefer_canvas=True,
-        control_scale=True
+        control_scale=True,
+        scrollWheelZoom=scroll_wheel_zoom  # Configurable scroll zoom
     )
     
     # Fit bounds
@@ -112,97 +114,153 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
             logger.warning(f"Could not load impedance data for popups: {e}")
             df_impedance = None
     
-    # Pre-calcular popups para performance (evitar loop de 5000+ layers)
-    logging.info("Calculando popups de fluxo...")
+    # Tentar carregar popups pré-calculados
+    import json
+    from pathlib import Path
     
-    # Criar coluna popup_html
-    # Usar dict lookup para performance
-    df_lookup = df_municipios.set_index('cd_mun') if 'cd_mun' in df_municipios.columns else pd.DataFrame()
+    precomputed_path = Path(__file__).parent.parent.parent / "data" / "04_maps" / "flow_popups_optimized.json"
+    popups_loaded = False
     
-    # Pre-fetch colors to properties if not already
-    # (Existing logic puts color column in gdf_filtered, which to_json handles)
-    
-    def get_popup_content(row):
+    if precomputed_path.exists():
         try:
-            cd_mun_val = row.get('CD_MUN') if 'CD_MUN' in row else row.get('cd_mun')
-            cd_mun = str(cd_mun_val)
-            nm_mun = row.get('NM_MUN', row.get('nm_mun', 'Desconhecido'))
-            utp_id = str(row.get('utp_id', ''))
+            with open(precomputed_path, "r", encoding="utf-8") as f:
+                precomputed_popups = json.load(f)
             
-            # Lookup data using fast index
-            mun_data = {}
-            found = False
-            
-            # Try exact match (string)
-            if cd_mun in df_lookup.index:
-                mun_entry = df_lookup.loc[cd_mun]
-                found = True
-            # Try integer match if string failed
-            elif cd_mun.isdigit() and int(cd_mun) in df_lookup.index:
-                mun_entry = df_lookup.loc[int(cd_mun)]
-                found = True
-                
-            if found:
-                # Handle duplicate index if any (return series or dataframe)
-                if isinstance(mun_entry, pd.DataFrame):
-                    mun_data = mun_entry.iloc[0].to_dict()
-                else:
-                    # CRITICAL FIX: When converting Series to dict, pandas may not
-                    # preserve nested dicts/lists correctly. We need to ensure
-                    # modal_matriz is copied as-is.
-                    mun_data = mun_entry.to_dict()
-                    
-                    # Explicitly preserve modal_matriz if it's a nested dict
-                    if 'modal_matriz' in mun_entry.index:
-                        mun_data['modal_matriz'] = mun_entry['modal_matriz']
-                
-                # CRITICAL FIX #2: cd_mun is the INDEX, so it's not in the dict!
-                # We need to add it back for origem_cd lookup in get_top_destinations
-                mun_data['cd_mun'] = cd_mun
-                
-                # Add debugging for first few lookups
-                if not hasattr(get_popup_content, '_debug_counter'):
-                    get_popup_content._debug_counter = 0
-                
-                if get_popup_content._debug_counter < 3:  # Debug first 3 only
-                    modal_type = type(mun_data.get('modal_matriz')).__name__
-                    has_data = bool(mun_data.get('modal_matriz'))
-                    logger.info(f"DEBUG popup {get_popup_content._debug_counter}: cd_mun={cd_mun}, modal_matriz type={modal_type}, has_data={has_data}")
-                    get_popup_content._debug_counter += 1
-                
-                top_destinations = get_top_destinations_for_municipality(
-                    mun_data, df_municipios, top_n=5, df_impedance=df_impedance
-                )
-            else:
-                logger.warning(f"Municipality {cd_mun} not found in df_municipios index")
-                top_destinations = []
-            
-            # Extract extra fields for header
-            regiao_metropolitana = row.get('regiao_metropolitana', mun_data.get('regiao_metropolitana', '-'))
-            regic = row.get('regic', mun_data.get('regic', '-'))
-            populacao = row.get('populacao_2022', mun_data.get('populacao_2022', 0))
-            uf = row.get('uf', mun_data.get('uf', ''))
-            
-            # Calculate total flow if not available
-            from src.interface.flow_utils import get_municipality_total_flow
-            total_viagens = get_municipality_total_flow(mun_data)
-            
-            return format_flow_popup_html(
-                nm_mun=nm_mun, 
-                cd_mun=cd_mun, 
-                utp_id=utp_id, 
-                top_destinations=top_destinations,
-                regiao_metropolitana=regiao_metropolitana,
-                regic=regic,
-                populacao=populacao,
-                total_viagens=total_viagens,
-                uf=uf
-            )
-        except Exception as e:
-            return f"Erro: {str(e)}"
+            # Map popups to dataframe
+            # JSON keys are strings, ensure we match correctly
+            def lookup_popup(row):
+                cd_mun = str(row.get('CD_MUN') if 'CD_MUN' in row else row.get('cd_mun'))
+                # Try string key
+                if cd_mun in precomputed_popups:
+                    return precomputed_popups[cd_mun]
+                # Try int key (if json keys were parsed as int which is unlikely but possible depending on loader)
+                if int(cd_mun) in precomputed_popups:
+                    return precomputed_popups[int(cd_mun)]
+                return None
 
-    # Apply calculation
-    gdf_filtered['popup_html'] = gdf_filtered.apply(get_popup_content, axis=1)
+            gdf_filtered['popup_html'] = gdf_filtered.apply(lookup_popup, axis=1)
+            
+            # Verify if we actually mapped something. If most are None, fallback to calculation
+            if gdf_filtered['popup_html'].notna().sum() > 0:
+                # Fill missing with "Loading..." or calculate? 
+                # Let's just calculate missing ones if any, or leave as error.
+                # Actually, if we loaded the file, we trust it.
+                # But let's fallback for specific rows if needed.
+                
+                # Check if we need to calculate any missing ones
+                missing_mask = gdf_filtered['popup_html'].isna()
+                if missing_mask.any():
+                    logger.warning(f"Found {missing_mask.sum()} municipalities without pre-computed popups. Computing on-the-fly for them.")
+                    # Only compute for these rows would be complex with apply.
+                    # Simpler: just fallback to full calculation if too many missing?
+                    # or just iterate the missing ones.
+                    pass 
+                
+                popups_loaded = True
+                logger.info("✅ Popups de fluxo carregados do cache pré-calculado.")
+            else:
+                logger.warning("Cache de popups carregado mas não casou com nenhum município. Recalculando.")
+                
+        except Exception as e:
+            logger.warning(f"Erro ao carregar popups pré-calculados: {e}. Recalculando.")
+    
+    if not popups_loaded:
+        # Pre-calcular popups para performance (evitar loop de 5000+ layers)
+        logging.info("Calculando popups de fluxo (Fall-back)...")
+        
+        # Criar coluna popup_html
+        # Usar dict lookup para performance
+        df_lookup = df_municipios.set_index('cd_mun') if 'cd_mun' in df_municipios.columns else pd.DataFrame()
+        
+        # Pre-fetch colors to properties if not already
+        # (Existing logic puts color column in gdf_filtered, which to_json handles)
+        
+        def get_popup_content(row):
+            try:
+                cd_mun_val = row.get('CD_MUN') if 'CD_MUN' in row else row.get('cd_mun')
+                cd_mun = str(cd_mun_val)
+                nm_mun = row.get('NM_MUN', row.get('nm_mun', 'Desconhecido'))
+                utp_id = str(row.get('utp_id', ''))
+                
+                # Lookup data using fast index
+                mun_data = {}
+                found = False
+                
+                # Try exact match (string)
+                if cd_mun in df_lookup.index:
+                    mun_entry = df_lookup.loc[cd_mun]
+                    found = True
+                # Try integer match if string failed
+                elif cd_mun.isdigit() and int(cd_mun) in df_lookup.index:
+                    mun_entry = df_lookup.loc[int(cd_mun)]
+                    found = True
+                    
+                if found:
+                    # Handle duplicate index if any (return series or dataframe)
+                    if isinstance(mun_entry, pd.DataFrame):
+                        mun_data = mun_entry.iloc[0].to_dict()
+                    else:
+                        # CRITICAL FIX: When converting Series to dict, pandas may not
+                        # preserve nested dicts/lists correctly. We need to ensure
+                        # modal_matriz is copied as-is.
+                        mun_data = mun_entry.to_dict()
+                        
+                        # Explicitly preserve modal_matriz if it's a nested dict
+                        if 'modal_matriz' in mun_entry.index:
+                            mun_data['modal_matriz'] = mun_entry['modal_matriz']
+                    
+                    # CRITICAL FIX #2: cd_mun is the INDEX, so it's not in the dict!
+                    # We need to add it back for origem_cd lookup in get_top_destinations
+                    mun_data['cd_mun'] = cd_mun
+                    
+                    # Add debugging for first few lookups
+                    if not hasattr(get_popup_content, '_debug_counter'):
+                        get_popup_content._debug_counter = 0
+                    
+                    if get_popup_content._debug_counter < 3:  # Debug first 3 only
+                        modal_type = type(mun_data.get('modal_matriz')).__name__
+                        has_data = bool(mun_data.get('modal_matriz'))
+                        logger.info(f"DEBUG popup {get_popup_content._debug_counter}: cd_mun={cd_mun}, modal_matriz type={modal_type}, has_data={has_data}")
+                        get_popup_content._debug_counter += 1
+                    
+                    top_destinations = get_top_destinations_for_municipality(
+                        mun_data, df_municipios, top_n=5, df_impedance=df_impedance
+                    )
+                else:
+                    logger.warning(f"Municipality {cd_mun} not found in df_municipios index")
+                    top_destinations = []
+                
+                # Extract extra fields for header
+                regiao_metropolitana = row.get('regiao_metropolitana', mun_data.get('regiao_metropolitana', '-'))
+                regic = row.get('regic', mun_data.get('regic', '-'))
+                populacao = row.get('populacao_2022', mun_data.get('populacao_2022', 0))
+                uf = row.get('uf', mun_data.get('uf', ''))
+                
+                # Calculate total flow if not available
+                from src.interface.flow_utils import get_municipality_total_flow
+                total_viagens = get_municipality_total_flow(mun_data)
+                
+                return format_flow_popup_html(
+                    nm_mun=nm_mun, 
+                    cd_mun=cd_mun, 
+                    utp_id=utp_id, 
+                    top_destinations=top_destinations,
+                    regiao_metropolitana=regiao_metropolitana,
+                    regic=regic,
+                    populacao=populacao,
+                    total_viagens=total_viagens,
+                    uf=uf
+                )
+            except Exception as e:
+                return f"Erro: {str(e)}"
+
+        # Apply calculation
+        gdf_filtered['popup_html'] = gdf_filtered.apply(get_popup_content, axis=1)
+
+    # Preencher NaN que sobraram (caso popup carregado parcialmente mas tenha falhado)
+    if gdf_filtered['popup_html'].isnull().any():
+       gdf_filtered['popup_html'] = gdf_filtered['popup_html'].fillna("<div>Carregando...</div>")
+
     
     # Separar municípios regulares e sedes (AGORA COM POPUP_HTML)
     gdf_members = gdf_filtered[~gdf_filtered['sede_utp']].copy()

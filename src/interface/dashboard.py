@@ -172,6 +172,22 @@ def get_derived_rm_geodataframe(optimized_rm_geojson_path):
         return None
 
 
+@st.cache_data(show_spinner="Carregando Estados...", hash_funcs={gpd.GeoDataFrame: id})
+def get_derived_state_geodataframe(optimized_state_geojson_path):
+    """
+    Carrega o GeoDataFrame pré-processado de Estados.
+    """
+    if not optimized_state_geojson_path.exists():
+        return None
+    
+    try:
+        gdf_states = gpd.read_file(optimized_state_geojson_path)
+        return gdf_states
+    except Exception as e:
+        logging.error(f"Erro ao carregar Estados otimizados: {e}")
+        return None
+
+
 @st.cache_resource(show_spinner="Construindo Grafo Territorial...")
 def get_territorial_graph(df_municipios):
     """
@@ -649,6 +665,10 @@ def render_dashboard(manager):
     
     gdf = get_geodataframe(optimized_municipalities_path, df_municipios)
     gdf_rm = get_derived_rm_geodataframe(optimized_rm_path)
+    
+    # Carregar Estados otimizados
+    optimized_state_path = maps_dir / "state_boundaries_optimized.geojson"
+    gdf_states_optimized = get_derived_state_geodataframe(optimized_state_path)
 
     
     # 1. Preparar DataFrame limpo para o grafo (sem dicts para evitar erro de hash)
@@ -728,9 +748,16 @@ def render_dashboard(manager):
             
             # Preparar contornos de estado (filtrado pelos estados selecionados)
             gdf_states_filtered = None
-            if show_state_borders and gdf is not None:
-                # Calcular globalmente os estados
-                gdf_all_states = get_state_boundaries(gdf)
+            if show_state_borders:
+                # 1. Tentar usar otimizado
+                if gdf_states_optimized is not None:
+                    gdf_all_states = gdf_states_optimized
+                # 2. Fallback: calcular do GDF atual
+                elif gdf is not None:
+                    gdf_all_states = get_state_boundaries(gdf)
+                else:
+                    gdf_all_states = None
+                    
                 if gdf_all_states is not None:
                     # Filtrar apenas estados selecionados ou visíveis no filtro atual
                     if selected_ufs:
@@ -921,11 +948,17 @@ def render_dashboard(manager):
                 
                 # Preparar contornos de estado
                 gdf_states_filtered = None
-                if show_state_borders_tab2 and gdf is not None:
-                    gdf_all_states = get_state_boundaries(gdf)
+                if show_state_borders_tab2:
+                    if gdf_states_optimized is not None:
+                        gdf_all_states = gdf_states_optimized
+                    elif gdf is not None:
+                        gdf_all_states = get_state_boundaries(gdf)
+                    else:
+                        gdf_all_states = None
+
                     if gdf_all_states is not None and selected_ufs:
                         gdf_states_filtered = gdf_all_states[gdf_all_states['uf'].isin(selected_ufs)]
-                    else:
+                    elif gdf_all_states is not None:
                         gdf_states_filtered = gdf_all_states
 
                 # Renderizar mapa com opção de mostrar contornos de RM
@@ -1073,11 +1106,17 @@ def render_dashboard(manager):
 
                  # Preparar contornos de estado
                  gdf_states_filtered = None
-                 if show_state_borders_tab3 and gdf is not None:
-                    gdf_all_states = get_state_boundaries(gdf)
+                 if show_state_borders_tab3:
+                    if gdf_states_optimized is not None:
+                        gdf_all_states = gdf_states_optimized
+                    elif gdf is not None:
+                        gdf_all_states = get_state_boundaries(gdf)
+                    else:
+                        gdf_all_states = None
+
                     if gdf_all_states is not None and selected_ufs:
                         gdf_states_filtered = gdf_all_states[gdf_all_states['uf'].isin(selected_ufs)]
-                    else:
+                    elif gdf_all_states is not None:
                         gdf_states_filtered = gdf_all_states
 
                  # Renderizar mapa usando render_map_with_flow_popups
@@ -1248,11 +1287,17 @@ def render_dashboard(manager):
 
                  # Preparar contornos de estado
                  gdf_states_filtered = None
-                 if show_state_borders_tab4 and gdf is not None:
-                    gdf_all_states = get_state_boundaries(gdf)
+                 if show_state_borders_tab4:
+                    if gdf_states_optimized is not None:
+                        gdf_all_states = gdf_states_optimized
+                    elif gdf is not None:
+                        gdf_all_states = get_state_boundaries(gdf)
+                    else:
+                        gdf_all_states = None
+
                     if gdf_all_states is not None and selected_ufs:
                         gdf_states_filtered = gdf_all_states[gdf_all_states['uf'].isin(selected_ufs)]
-                    else:
+                    elif gdf_all_states is not None:
                         gdf_states_filtered = gdf_all_states
 
                  # Usar a nova função de renderização com popups de fluxo

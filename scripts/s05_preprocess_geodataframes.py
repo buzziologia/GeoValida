@@ -40,6 +40,7 @@ SHAPEFILE_PATH = DATA_DIR / "01_raw" / "shapefiles" / "BR_Municipios_2024.shp"
 
 OUTPUT_MUNICIPALITIES = MAPS_DIR / "municipalities_optimized.geojson"
 OUTPUT_RM_BOUNDARIES = MAPS_DIR / "rm_boundaries_optimized.geojson"
+OUTPUT_STATE_BOUNDARIES = MAPS_DIR / "state_boundaries_optimized.geojson"
 
 
 def load_initialization_data():
@@ -219,6 +220,67 @@ def save_geodataframe(gdf, output_path, description):
         return False
 
 
+
+def process_state_geodataframe(shapefile_path, municipios_list):
+    """
+    Gera geometrias de Estados dissolvendo os municípios.
+    """
+    logger.info("Processando GeoDataFrame de Estados...")
+    
+    if not shapefile_path.exists():
+        logger.error(f"Shapefile não encontrado: {shapefile_path}")
+        return None
+    
+    try:
+        # 1. Carregar shapefile bruto (sem simplificação prévia)
+        logger.info("  Carregando shapefile bruto...")
+        gdf_raw = gpd.read_file(shapefile_path)
+        
+        # 2. Preparar dados
+        df_mun = pd.DataFrame(municipios_list)
+        gdf_raw['CD_MUN'] = gdf_raw['CD_MUN'].astype(str)
+        df_mun['cd_mun'] = df_mun['cd_mun'].astype(str)
+        
+        # 3. Merge para pegar a UF
+        logger.info("  Mesclando com dados de UF...")
+        gdf_merged = gdf_raw.merge(
+            df_mun[['cd_mun', 'uf']], 
+            left_on='CD_MUN', 
+            right_on='cd_mun', 
+            how='inner'
+        )
+        
+        if gdf_merged.empty:
+            logger.warning("  Nenhum estado encontrado nos dados")
+            return None
+        
+        # 4. Dissolver (União das geometrias) por UF
+        logger.info("  Dissolvendo geometrias por UF...")
+        
+        # Correção de topologia: buffer(0) para fechar gaps microscópicos
+        gdf_merged['geometry'] = gdf_merged.geometry.buffer(0)
+        
+        gdf_dissolved = gdf_merged.dissolve(by='uf').reset_index()
+        
+        logger.info(f"    ✓ {len(gdf_dissolved)} Estados processados")
+        
+        # 5. Simplificar o contorno resultante
+        logger.info("  Simplificando contornos de Estados...")
+        gdf_dissolved['geometry'] = gdf_dissolved.geometry.simplify(tolerance=0.002, preserve_topology=True)
+        logger.info("    ✓ Simplificação concluída")
+        
+        # 6. Reprojetar para WGS84 se necessário
+        if gdf_dissolved.crs and gdf_dissolved.crs.to_epsg() != 4326:
+            gdf_dissolved = gdf_dissolved.to_crs(epsg=4326)
+        
+        logger.info(f"  ✓ GeoDataFrame de Estados processado: {len(gdf_dissolved)} UFs")
+        return gdf_dissolved
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar GeoDataFrame de Estados: {e}")
+        return None
+
+
 def main():
     """Função principal."""
     logger.info("=" * 80)
@@ -247,6 +309,12 @@ def main():
         save_geodataframe(gdf_rm, OUTPUT_RM_BOUNDARIES, "contornos de RMs")
     else:
         logger.info("  (Pulando salvamento de RMs - nenhuma RM encontrada)")
+        
+    # 6. Processar GeoDataFrame de Estados
+    gdf_states = process_state_geodataframe(SHAPEFILE_PATH, municipios)
+    if gdf_states is not None:
+        save_geodataframe(gdf_states, OUTPUT_STATE_BOUNDARIES, "contornos de Estados")
+
     
     logger.info("\n" + "=" * 80)
     logger.info("✓ ETAPA 5 CONCLUÍDA COM SUCESSO")

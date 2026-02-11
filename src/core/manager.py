@@ -14,6 +14,43 @@ from src.pipeline.sede_consolidator import SedeConsolidator
 from src.pipeline.sede_analyzer import SedeAnalyzer
 
 class GeoValidaManager:
+    def sync_graph_utp_seeds_and_df(self):
+        """
+        Sincroniza o grafo, utp_seeds e o DataFrame de municípios.
+        Garante que cada UTP ativa tem um município sede com sede_utp=True,
+        e que o DataFrame reflete o grafo.
+        """
+        # Limpamos flags antigas de sede_utp em todos os municípios
+        for node, data in self.graph.hierarchy.nodes(data=True):
+            if data.get('type') == 'municipality':
+                # Garantir que a flag exista e seja False por default
+                self.graph.hierarchy.nodes[node]['sede_utp'] = False
+
+        # Marcar todos os municípios em utp_seeds como sede_utp=True
+        for utp_id, mun_id in self.graph.utp_seeds.items():
+            if self.graph.hierarchy.has_node(mun_id):
+                self.graph.hierarchy.nodes[mun_id]['sede_utp'] = True
+        # Atualizar DataFrame
+        if hasattr(self, 'municipios_data') and self.municipios_data is not None:
+            # Ensure the DataFrame has the sede_utp column
+            if 'sede_utp' not in self.municipios_data.columns:
+                self.municipios_data['sede_utp'] = False
+
+            for idx, row in self.municipios_data.iterrows():
+                cd_mun = row['cd_mun']
+                # Obter valor atual do nó no grafo (False se não existir)
+                is_sede = self.graph.hierarchy.nodes.get(cd_mun, {}).get('sede_utp', False)
+                self.municipios_data.at[idx, 'sede_utp'] = is_sede
+
+                utp_id = self.graph.get_municipality_utp(cd_mun)
+                if utp_id != "NAO_ENCONTRADO" and utp_id != "SEM_UTP":
+                    self.municipios_data.at[idx, 'utp_id'] = utp_id
+        # Remover UTPs "fantasmas" (sem municípios ou sem sede)
+        self.graph.cleanup_empty_utps()
+        # Log de consistência
+        utp_count = len([n for n, d in self.graph.hierarchy.nodes(data=True) if d.get('type') == 'utp'])
+        sede_count = sum([self.graph.hierarchy.nodes[n].get('sede_utp', False) for n in self.graph.hierarchy.nodes if self.graph.hierarchy.nodes[n].get('type') == 'municipality'])
+        self.logger.info(f"🔄 Sync: {utp_count} UTPs, {sede_count} sedes marcadas no grafo.")
     """
     Orquestrador Principal do GeoValida.
     Gere o estado do Grafo, Análise de Fluxos e Geração de Mapas.
@@ -335,15 +372,14 @@ class GeoValidaManager:
             self.map_generator.gdf_complete,
             self.map_generator
         )
-        
+        # Sincronizar grafo, utp_seeds e DataFrame após consolidação
+        self.sync_graph_utp_seeds_and_df()
         # Save map after Step 6
         (self.map_generator
             .sync_with_graph(self.graph)
             .save_map(FILES['mapa_05'].parent / "mapa_06_sedes.png", title="Pós-Consolidação de Sedes"))
-        
         # DEBUG: Log UTP count after Step 6
         if self.map_generator.gdf_complete is not None:
-            # Check which column name exists
             utp_col = 'UTP_ID' if 'UTP_ID' in self.map_generator.gdf_complete.columns else 'utp_id'
             gdf_utps = self.map_generator.gdf_complete[utp_col].nunique() if utp_col in self.map_generator.gdf_complete.columns else 0
         else:
@@ -352,7 +388,6 @@ class GeoValidaManager:
         self.logger.info(f"   🔍 DEBUG Post-Step6 State:")
         self.logger.info(f"      GDF has {gdf_utps} unique UTPs")
         self.logger.info(f"      Graph has {graph_utps} UTP nodes")
-            
         return changes
 
     def step_8_border_validation(self):
@@ -384,6 +419,8 @@ class GeoValidaManager:
             impedance_df=self.sede_analyzer.df_impedance
         )
         
+        # Sincronizar grafo, utp_seeds e DataFrame antes da validação de fronteiras
+        self.sync_graph_utp_seeds_and_df()
         # Sync map with current graph state BEFORE border validation
         self.map_generator.sync_with_graph(self.graph)
         
@@ -443,20 +480,60 @@ class GeoValidaManager:
             
         # Export Final Snapshot Step 8 (includes both border validation and isolated resolution)
         snapshot_path = Path(__file__).parent.parent.parent / "data" / "03_processed" / "snapshot_step8_final.json"
-        
+
         try:
-            # Compute coloring for snapshot
+            # Prefer exporting the snapshot based on the CURRENT graph state so Step 8 changes
+            # (border validation + isolated resolution) are preserved in the final snapshot.
+            # Sync map with graph to ensure geometries/attributes are up-to-date.
+            self.map_generator.sync_with_graph(self.graph)
+            # Ensure coloring is computed and attached to the GDF before export
             gdf = self.map_generator.gdf_complete
             if gdf is not None and not gdf.empty:
+                # Ensure UTP_ID column exists
                 if 'utp_id' in gdf.columns and 'UTP_ID' not in gdf.columns:
                     gdf['UTP_ID'] = gdf['utp_id']
-                    
-                coloring = self.graph.compute_graph_coloring(gdf)
-                gdf['COLOR_ID'] = gdf['CD_MUN'].astype(int).map(coloring).fillna(0).astype(int)
-            
+                try:
+                    coloring = self.graph.compute_graph_coloring(gdf)
+                    gdf['COLOR_ID'] = gdf['CD_MUN'].astype(int).map(coloring).fillna(0).astype(int)
+                except Exception as e_col:
+                    self.logger.warning(f"⚠️ Erro ao calcular coloração para snapshot final: {e_col}")
+
             self.graph.export_snapshot(snapshot_path, "Border Validation + Isolated Resolution", self.map_generator.gdf_complete)
+            self.logger.info(f"✅ Final snapshot exported from current graph: {snapshot_path}")
         except Exception as e:
-             self.logger.warning(f"⚠️ Failed to export Step 8 snapshot: {e}")
+            self.logger.warning(f"⚠️ Failed to export final snapshot from current graph: {e}")
+            # Fallback: try to generate final snapshot by copying Step 6 snapshot (legacy behaviour)
+            try:
+                step6_path = Path(__file__).parent.parent.parent / "data" / "03_processed" / "snapshot_step6_sede_consolidation.json"
+                if step6_path.exists():
+                    import json
+                    with open(step6_path, 'r', encoding='utf-8') as fh:
+                        step6_snapshot = json.load(fh)
+
+                    # Update metadata to reflect final snapshot provenance
+                    meta = step6_snapshot.get('metadata', {})
+                    meta['timestamp'] = __import__('datetime').datetime.now().isoformat()
+                    meta['step'] = 'Final (based on Step 6: Sede Consolidation)'
+                    step6_snapshot['metadata'] = meta
+
+                    # Write out final snapshot
+                    with open(snapshot_path, 'w', encoding='utf-8') as fh:
+                        json.dump(step6_snapshot, fh, indent=2, ensure_ascii=False)
+
+                    self.logger.info(f"✅ Final snapshot generated from Step 6 (fallback): {step6_path} -> {snapshot_path}")
+                else:
+                    # As a last resort, try computing coloring and exporting from the map gdf
+                    gdf = self.map_generator.gdf_complete
+                    if gdf is not None and not gdf.empty:
+                        if 'utp_id' in gdf.columns and 'UTP_ID' not in gdf.columns:
+                            gdf['UTP_ID'] = gdf['utp_id']
+
+                        coloring = self.graph.compute_graph_coloring(gdf)
+                        gdf['COLOR_ID'] = gdf['CD_MUN'].astype(int).map(coloring).fillna(0).astype(int)
+
+                    self.graph.export_snapshot(snapshot_path, "Border Validation + Isolated Resolution", self.map_generator.gdf_complete)
+            except Exception as e2:
+                self.logger.warning(f"⚠️ Failed to export Step 8 snapshot (fallback): {e2}")
         
         return total_changes
 
