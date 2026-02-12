@@ -426,6 +426,164 @@ class BorderValidatorV2:
         
         return None
     
+    def _get_main_flow_destination(
+        self,
+        mun_id: int,
+        flow_df: pd.DataFrame,
+        max_time: float = 2.0
+    ) -> Optional[Tuple[int, float, str]]:
+        """
+        Encontra o município de destino com maior fluxo dentro do limite de tempo.
+        
+        Args:
+            mun_id: ID do município origem
+            flow_df: DataFrame de fluxos
+            max_time: Tempo máximo de viagem em horas
+            
+        Returns:
+            (dest_mun_id, flow_value, dest_utp_id) ou None se não encontrar
+        """
+        if flow_df is None or flow_df.empty:
+            return None
+        
+        # Busca todos os fluxos do município origem
+        flows = flow_df[flow_df['mun_origem'].astype(int) == int(mun_id)].copy()
+        
+        if flows.empty:
+            return None
+        
+        # Validar tempo de viagem usando impedância
+        valid_flows = []
+        for _, row in flows.iterrows():
+            dest_id = int(row['mun_destino'])
+            viagens = float(row['viagens'])
+            
+            # Verificar tempo de viagem
+            tempo = self._get_travel_time(mun_id, dest_id)
+            
+            if tempo is None:
+                continue  # Sem dados de tempo, ignora
+            
+            if tempo > max_time:
+                continue  # Tempo maior que o limite
+            
+            # Buscar UTP do destino
+            dest_utp = self.graph.get_municipality_utp(dest_id)
+            if dest_utp and dest_utp != "NAO_ENCONTRADO" and dest_utp != "SEM_UTP":
+                valid_flows.append((dest_id, viagens, dest_utp, tempo))
+        
+        if not valid_flows:
+            return None
+        
+        # Ordena por fluxo (descendente) e retorna o maior
+        valid_flows.sort(key=lambda x: -x[1])
+        dest_id, flow_value, dest_utp, tempo = valid_flows[0]
+        
+        return (dest_id, flow_value, dest_utp)
+    
+    def _reallocate_by_main_flow(
+        self,
+        flow_df: pd.DataFrame,
+        gdf: gpd.GeoDataFrame
+    ) -> int:
+        """
+        Realoca municípios de fronteira sem fluxo para sedes, baseado no fluxo principal.
+        
+        Esta etapa trata municípios que:
+        1. Estão na fronteira (adjacentes a outras UTPs)
+        2. Não têm fluxo para nenhuma sede
+        3. Têm fluxo principal para outro município
+        
+        Valida adjacência e regras de RM antes de realocar.
+        
+        Returns:
+            Número de realocações realizadas
+        """
+        self.logger.info("\n" + "="*80)
+        self.logger.info("STEP: Realocação por Fluxo Principal (municípios sem fluxo para sedes)")
+        self.logger.info("="*80)
+        
+        changes = 0
+        
+        # Identificar municípios de fronteira
+        border_municipalities = self._identify_poorly_connected_municipalities(flow_df, gdf)
+        
+        relocations = []
+        
+        for utp_id, mun_set in border_municipalities.items():
+            for mun_id in mun_set:
+                nm_mun = self.graph.hierarchy.nodes.get(mun_id, {}).get('name', str(mun_id))
+                
+                # Verificar se tem fluxo para alguma sede
+                sede_flows = self._get_flows_to_sedes(mun_id, flow_df, max_time=2.0)
+                
+                if sede_flows:
+                    # Tem fluxo para sedes, já foi tratado na etapa anterior
+                    continue
+                
+                self.logger.debug(f"  [SEM FLUXO PARA SEDES] {nm_mun} ({mun_id})")
+                
+                # Buscar fluxo principal para qualquer município
+                main_flow = self._get_main_flow_destination(mun_id, flow_df, max_time=2.0)
+                
+                if not main_flow:
+                    self.logger.debug(f"    [REJEITADO] Sem fluxo principal válido")
+                    continue
+                
+                dest_mun_id, flow_value, target_utp = main_flow
+                dest_nm = self.graph.hierarchy.nodes.get(dest_mun_id, {}).get('name', str(dest_mun_id))
+                
+                # Validação 1: Não mover para a mesma UTP
+                if target_utp == utp_id:
+                    self.logger.debug(f"    [REJEITADO] Fluxo para mesma UTP ({target_utp})")
+                    continue
+                
+                # Validação 2: Adjacência
+                if not self._is_adjacent_to_utp(mun_id, target_utp):
+                    self.logger.debug(f"    [REJEITADO] UTP {target_utp} não é adjacente")
+                    continue
+                
+                # Validação 3: Regras de RM (INVIOLÁVEIS)
+                if not self._validate_rm_compatibility(mun_id, target_utp):
+                    self.logger.debug(f"    [REJEITADO] Incompatibilidade de RM")
+                    continue
+                
+                # Município aprovado para realocação
+                relocations.append({
+                    'mun_id': mun_id,
+                    'nm_mun': nm_mun,
+                    'origin_utp': utp_id,
+                    'target_utp': target_utp,
+                    'dest_mun_id': dest_mun_id,
+                    'dest_nm': dest_nm,
+                    'flow_value': flow_value
+                })
+        
+        # Executar realocações
+        if relocations:
+            self.logger.info(f"\n📦 Executando {len(relocations)} realocações por fluxo principal...")
+            
+            for rel in relocations:
+                self.logger.info(
+                    f"  ✅ {rel['nm_mun']} ({rel['mun_id']}): "
+                    f"{rel['origin_utp']} → {rel['target_utp']}"
+                )
+                self.logger.info(
+                    f"     Fluxo principal: {rel['flow_value']:.0f} viagens para "
+                    f"{rel['dest_nm']} ({rel['dest_mun_id']})"
+                )
+                
+                # Executar movimento
+                self.graph.move_municipality(rel['mun_id'], rel['target_utp'])
+                changes += 1
+        else:
+            self.logger.info("  ℹ️ Nenhum município elegível para realocação por fluxo principal")
+        
+        self.logger.info(f"\n✅ Realocação por fluxo principal concluída: {changes} mudanças")
+        self.logger.info("="*80 + "\n")
+        
+        return changes
+    
     def run_border_validation(
         self,
         flow_df: pd.DataFrame,
@@ -490,9 +648,16 @@ class BorderValidatorV2:
             
             self.logger.info(f"\n📊 Iteration {iteration} complete: {len(relocations)} changes")
         
+        # NOVA ETAPA: Realocação por fluxo principal
+        # Trata municípios de fronteira que não têm fluxo para sedes
+        changes_main_flow = self._reallocate_by_main_flow(flow_df, gdf)
+        total_changes += changes_main_flow
+        
         self.logger.info(f"\n{'='*80}")
         self.logger.info(f"BORDER VALIDATION COMPLETE")
         self.logger.info(f"  Total iterations: {iteration}")
+        self.logger.info(f"  Sede-based relocations: {total_changes - changes_main_flow}")
+        self.logger.info(f"  Main flow relocations: {changes_main_flow}")
         self.logger.info(f"  Total changes: {total_changes}")
         self.logger.info(f"{'='*80}\n")
         
