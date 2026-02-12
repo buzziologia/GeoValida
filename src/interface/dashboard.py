@@ -775,7 +775,8 @@ def render_dashboard(manager):
                 show_rm_borders=show_rm_borders,
                 show_state_borders=show_state_borders,
                 gdf_states=gdf_states_filtered,
-                PASTEL_PALETTE=PASTEL_PALETTE
+                PASTEL_PALETTE=PASTEL_PALETTE,
+                step_key='step1'
             )
             if m:
                 map_html = m._repr_html_()
@@ -972,7 +973,8 @@ def render_dashboard(manager):
                     show_rm_borders=show_rm_borders_tab2,
                     show_state_borders=show_state_borders_tab2,
                     gdf_states=gdf_states_filtered,
-                    PASTEL_PALETTE=PASTEL_PALETTE
+                    PASTEL_PALETTE=PASTEL_PALETTE,
+                    step_key='step5'
                 )
                 if m:
                     map_html = m._repr_html_()
@@ -1129,7 +1131,8 @@ def render_dashboard(manager):
                      show_rm_borders=show_rm_borders_tab3,
                      show_state_borders=show_state_borders_tab3,
                      gdf_states=gdf_states_filtered,
-                     PASTEL_PALETTE=PASTEL_PALETTE
+                     PASTEL_PALETTE=PASTEL_PALETTE,
+                     step_key='step6'
                  )
                  if m:
                       map_html = m._repr_html_()
@@ -1313,7 +1316,8 @@ def render_dashboard(manager):
                          show_rm_borders=show_rm_borders_tab4,
                          show_state_borders=show_state_borders_tab4,
                          gdf_states=gdf_states_filtered,
-                         PASTEL_PALETTE=PASTEL_PALETTE
+                         PASTEL_PALETTE=PASTEL_PALETTE,
+                         step_key='step8'
                      )
                      
                      if map_with_flows:

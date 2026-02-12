@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa", 
                                   global_colors=None, gdf_rm=None, show_rm_borders=False, 
                                   show_state_borders=False, gdf_states=None,
-                                  PASTEL_PALETTE=None, df_impedance=None, scroll_wheel_zoom=True):
+                                  PASTEL_PALETTE=None, df_impedance=None, scroll_wheel_zoom=True,
+                                  step_key='step8'):
     """
     Renderiza mapa folium com popups informativos de fluxo.
     
@@ -29,6 +30,7 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
         PASTEL_PALETTE: Lista de cores para coloração
         df_impedance: Optional DataFrame com dados de tempo de viagem (origem_6, destino_6, tempo_horas)
         scroll_wheel_zoom: Se deve habilitar zoom com scroll do mouse (default True)
+        step_key: Pipeline step key for loading the correct popup file ('step1', 'step5', 'step6', 'step8')
     """
     if gdf_filtered is None or gdf_filtered.empty:
         return None
@@ -118,7 +120,9 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
     import json
     from pathlib import Path
     
-    precomputed_path = Path(__file__).parent.parent.parent / "data" / "04_maps" / "flow_popups_optimized.json"
+    # Use step-specific popup file
+    popup_filename = f"flow_popups_{step_key}.json"
+    precomputed_path = Path(__file__).parent.parent.parent / "data" / "04_maps" / popup_filename
     popups_loaded = False
     
     if precomputed_path.exists():
