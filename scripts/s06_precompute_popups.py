@@ -16,7 +16,10 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.config import setup_logging
 from src.interface.snapshot_loader import SnapshotLoader
-from src.interface.flow_utils import get_top_destinations_for_municipality, format_flow_popup_html, get_municipality_total_flow
+from src.interface.flow_utils import (
+    get_top_destinations_for_municipality, format_flow_popup_html,
+    get_municipality_total_flow, load_idh_pib_data, get_idh_for_municipality
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +74,14 @@ def precompute_for_step(step_key: str, output_filename: str, df_impedance=None):
         logger.warning(f"No data found for {step_key}, skipping...")
         return -1
     
+    # Load IDH/PIB data once for all municipalities in this step
+    _pib_by_cd_mun: dict = {}
+    try:
+        _, _pib_by_cd_mun = load_idh_pib_data()
+        logger.info(f"IDH/PIB loaded for popup pre-computation")
+    except Exception as e:
+        logger.warning(f"Could not load IDH/PIB data: {e}")
+    
     # Setup lookup dictionary
     df_lookup = df_municipios.set_index('cd_mun') if 'cd_mun' in df_municipios.columns else pd.DataFrame()
     
@@ -104,7 +115,8 @@ def precompute_for_step(step_key: str, output_filename: str, df_impedance=None):
             
             # Calculate top destinations using the snapshot's UTP assignments
             top_destinations = get_top_destinations_for_municipality(
-                mun_data, df_municipios, top_n=5, df_impedance=df_impedance
+                mun_data, df_municipios, top_n=5, df_impedance=df_impedance,
+                pib_by_cd_mun=_pib_by_cd_mun
             )
             
             # Extract fields
@@ -114,6 +126,10 @@ def precompute_for_step(step_key: str, output_filename: str, df_impedance=None):
             uf = row.get('uf', mun_data.get('uf', ''))
             
             total_viagens = get_municipality_total_flow(mun_data)
+            
+            # Lookup IDH and PIB
+            idh_val = get_idh_for_municipality(nm_mun, uf)
+            pib_val = _pib_by_cd_mun.get(str(cd_mun)) or _pib_by_cd_mun.get(cd_mun)
             
             # Generate HTML
             html = format_flow_popup_html(
@@ -125,7 +141,9 @@ def precompute_for_step(step_key: str, output_filename: str, df_impedance=None):
                 regic=regic,
                 populacao=populacao,
                 total_viagens=total_viagens,
-                uf=uf
+                uf=uf,
+                idh=idh_val,
+                pib_mil_reais=pib_val,
             )
             
             popups[cd_mun] = html

@@ -1,1948 +1,956 @@
 {
   "version": "1.0",
   "status": "executed",
-  "timestamp_created": "2026-02-11T12:12:17.652027",
-  "timestamp_last_updated": "2026-02-11T12:12:17.652033",
-  "total_consolidations": 102,
+  "timestamp_created": "2026-02-20T12:01:50.407621",
+  "timestamp_last_updated": "2026-02-20T12:01:50.407626",
+  "total_consolidations": 43,
   "utps_mapping": {
     "478": "662",
     "616": "618",
-    "20": "307",
     "2": "128",
-    "419": "745",
     "273": "314",
     "444": "255",
-    "319": "674",
     "435": "557",
     "279": "111",
-    "693": "728",
-    "674": "319",
     "755": "631",
-    "NOVA23": "326",
-    "409": "366",
-    "366": "675",
     "683": "253",
     "NOVA3": "209",
-    "667": "627",
     "431": "520",
     "432": "520",
     "501": "362",
     "159": "126",
     "699": "538",
-    "623": "726",
-    "373": "556",
-    "21": "352",
-    "29": "351",
-    "35": "189",
     "413": "558",
-    "417": "197",
-    "83": "313",
-    "101": "236",
-    "546": "688",
     "558": "625",
-    "8": "221",
     "322": "189",
-    "213": "323",
     "76": "335",
     "16": "251",
     "97": "197",
-    "197": "97",
-    "351": "352",
-    "92": "198",
-    "767": "364",
     "356": "364",
-    "215": "364",
     "31": "NOVA15",
-    "36": "180",
-    "45": "301",
-    "200": "12",
-    "125": "663",
-    "333": "312",
-    "108": "365",
-    "165": "332",
-    "168": "NOVA15",
-    "175": "294",
     "707": "281",
-    "256": "317",
     "258": "274",
-    "226": "462",
     "712": "50",
-    "332": "48",
     "402": "481",
-    "661": "79",
-    "460": "264",
-    "384": "230",
-    "177": "211",
-    "582": "340",
-    "624": "340",
-    "212": "234",
     "229": "191",
     "304": "88",
-    "706": "191",
-    "372": "672",
-    "43": "84",
-    "427": "717",
     "454": "240",
-    "491": "535",
-    "535": "299",
     "144": "156",
     "596": "267",
-    "228": "267",
-    "286": "251",
-    "672": "497",
-    "293": "359",
     "687": "299",
-    "717": "497",
-    "338": "193",
-    "359": "293",
     "380": "148",
     "386": "294",
-    "103": "148",
     "580": "148",
     "612": "784",
     "464": "98",
-    "572": "725",
-    "725": "324",
     "536": "642",
-    "555": "287",
-    "590": "555",
-    "680": "287"
+    "680": "287",
+    "409": "366",
+    "372": "672",
+    "427": "717"
   },
   "consolidations": [
     {
-      "id": 93,
-      "timestamp": "2026-02-11T12:12:14.231018",
+      "id": 95,
+      "timestamp": "2026-02-20T12:01:49.089108",
       "source_utp": "478",
       "target_utp": "662",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.29h",
       "details": {
         "sede_id": 1502707,
-        "is_sede": true,
+        "sede_destino": 1506138,
         "nm_sede": "Conceição do Araguaia",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 1.286131352,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 94,
-      "timestamp": "2026-02-11T12:12:14.264735",
+      "id": 96,
+      "timestamp": "2026-02-20T12:01:49.121167",
       "source_utp": "616",
       "target_utp": "618",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.32h",
       "details": {
         "sede_id": 1505106,
-        "is_sede": true,
+        "sede_destino": 1505304,
         "nm_sede": "Óbidos",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.32,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 95,
-      "timestamp": "2026-02-11T12:12:14.348777",
-      "source_utp": "20",
-      "target_utp": "307",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.71h",
-      "details": {
-        "sede_id": 1702109,
-        "is_sede": true,
-        "nm_sede": "Araguaína",
-        "municipalities_moved": 10,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.713865297,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 96,
-      "timestamp": "2026-02-11T12:12:14.375324",
+      "id": 97,
+      "timestamp": "2026-02-20T12:01:49.139869",
       "source_utp": "2",
       "target_utp": "128",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.04h",
       "details": {
         "sede_id": 2100055,
-        "is_sede": true,
+        "sede_destino": 2105302,
         "nm_sede": "Açailândia",
+        "is_sede": true,
         "municipalities_moved": 6,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.041388434,
         "rm_origem": "Recorte Metropolitano do Sudoeste Maranhense",
-        "rm_destino": "Recorte Metropolitano do Sudoeste Maranhense"
-      }
-    },
-    {
-      "id": 97,
-      "timestamp": "2026-02-11T12:12:14.393677",
-      "source_utp": "419",
-      "target_utp": "745",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.14h",
-      "details": {
-        "sede_id": 2103208,
-        "is_sede": true,
-        "nm_sede": "Chapadinha",
-        "municipalities_moved": 5,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.137150147,
-        "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "Recorte Metropolitano do Sudoeste Maranhense",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
       "id": 98,
-      "timestamp": "2026-02-11T12:12:14.422728",
+      "timestamp": "2026-02-20T12:01:49.157155",
       "source_utp": "273",
       "target_utp": "314",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.18h",
       "details": {
         "sede_id": 2110203,
-        "is_sede": true,
+        "sede_destino": 2111300,
         "nm_sede": "Santa Rita",
+        "is_sede": true,
         "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.176281122,
         "rm_origem": "Recorte Metropolitano da Grande São Luís",
-        "rm_destino": "Recorte Metropolitano da Grande São Luís"
+        "rm_destino": "Recorte Metropolitano da Grande São Luís",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
       "id": 99,
-      "timestamp": "2026-02-11T12:12:14.443716",
+      "timestamp": "2026-02-20T12:01:49.177146",
       "source_utp": "444",
       "target_utp": "255",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.55h",
       "details": {
         "sede_id": 2200251,
-        "is_sede": true,
+        "sede_destino": 2208007,
         "nm_sede": "Alagoinha do Piauí",
+        "is_sede": true,
         "municipalities_moved": 6,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 1.554054762,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
       "id": 100,
-      "timestamp": "2026-02-11T12:12:14.587102",
-      "source_utp": "319",
-      "target_utp": "674",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.73h",
-      "details": {
-        "sede_id": 2307601,
-        "is_sede": true,
-        "nm_sede": "Limoeiro do Norte",
-        "municipalities_moved": 7,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.729788416,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 101,
-      "timestamp": "2026-02-11T12:12:14.612683",
+      "timestamp": "2026-02-20T12:01:49.210480",
       "source_utp": "435",
       "target_utp": "557",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.95h",
       "details": {
         "sede_id": 2302602,
-        "is_sede": true,
+        "sede_destino": 2307254,
         "nm_sede": "Camocim",
+        "is_sede": true,
         "municipalities_moved": 7,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.948405084,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 102,
-      "timestamp": "2026-02-11T12:12:14.623518",
+      "id": 101,
+      "timestamp": "2026-02-20T12:01:49.221216",
       "source_utp": "279",
       "target_utp": "111",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.09h",
       "details": {
         "sede_id": 2303501,
-        "is_sede": true,
+        "sede_destino": 2304400,
         "nm_sede": "Cascavel",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.087769063,
         "rm_origem": "Recorte Metropolitano de Fortaleza",
-        "rm_destino": "Recorte Metropolitano de Fortaleza"
+        "rm_destino": "Recorte Metropolitano de Fortaleza",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 103,
-      "timestamp": "2026-02-11T12:12:14.686402",
-      "source_utp": "693",
-      "target_utp": "728",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.93h",
-      "details": {
-        "sede_id": 2305803,
-        "is_sede": true,
-        "nm_sede": "Ipu",
-        "municipalities_moved": 9,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.932937101,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 104,
-      "timestamp": "2026-02-11T12:12:14.731282",
-      "source_utp": "674",
-      "target_utp": "319",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.73h",
-      "details": {
-        "sede_id": 2311801,
-        "is_sede": true,
-        "nm_sede": "Russas",
-        "municipalities_moved": 10,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.729788416,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 105,
-      "timestamp": "2026-02-11T12:12:14.768617",
+      "id": 102,
+      "timestamp": "2026-02-20T12:01:49.375351",
       "source_utp": "755",
       "target_utp": "631",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.06h",
       "details": {
         "sede_id": 2407401,
-        "is_sede": true,
+        "sede_destino": 2409407,
         "nm_sede": "Martins",
+        "is_sede": true,
         "municipalities_moved": 14,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.060161768,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 106,
-      "timestamp": "2026-02-11T12:12:14.778187",
-      "source_utp": "NOVA23",
-      "target_utp": "326",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.45h",
-      "details": {
-        "sede_id": 2512747,
-        "is_sede": true,
-        "nm_sede": "Riachão",
-        "municipalities_moved": 2,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.451219872,
-        "rm_origem": "Recorte Metropolitano de Araruna",
-        "rm_destino": "Recorte Metropolitano de Araruna"
-      }
-    },
-    {
-      "id": 107,
-      "timestamp": "2026-02-11T12:12:14.812231",
-      "source_utp": "409",
-      "target_utp": "366",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.78h",
-      "details": {
-        "sede_id": 2601607,
-        "is_sede": true,
-        "nm_sede": "Belém do São Francisco",
-        "municipalities_moved": 6,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.780812424,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 108,
-      "timestamp": "2026-02-11T12:12:14.841700",
-      "source_utp": "366",
-      "target_utp": "675",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.06h",
-      "details": {
-        "sede_id": 2603009,
-        "is_sede": true,
-        "nm_sede": "Cabrobó",
-        "municipalities_moved": 8,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.061924221,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 109,
-      "timestamp": "2026-02-11T12:12:14.851393",
+      "id": 103,
+      "timestamp": "2026-02-20T12:01:49.386350",
       "source_utp": "683",
       "target_utp": "253",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.47h",
       "details": {
         "sede_id": 2612604,
-        "is_sede": true,
+        "sede_destino": 2611101,
         "nm_sede": "Santa Maria da Boa Vista",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.468983896,
         "rm_origem": "Recorte Metropolitano do Polo Petrolina/PE e Juazeiro/BA",
-        "rm_destino": "Recorte Metropolitano do Polo Petrolina/PE e Juazeiro/BA"
+        "rm_destino": "Recorte Metropolitano do Polo Petrolina/PE e Juazeiro/BA",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 110,
-      "timestamp": "2026-02-11T12:12:14.915199",
+      "id": 104,
+      "timestamp": "2026-02-20T12:01:49.452056",
       "source_utp": "NOVA3",
       "target_utp": "209",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.43h",
       "details": {
         "sede_id": 2707305,
-        "is_sede": true,
+        "sede_destino": 2704500,
         "nm_sede": "Porto Calvo",
+        "is_sede": true,
         "municipalities_moved": 10,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.426229179,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 111,
-      "timestamp": "2026-02-11T12:12:14.947077",
-      "source_utp": "667",
-      "target_utp": "627",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.02h",
-      "details": {
-        "sede_id": 2904605,
-        "is_sede": true,
-        "nm_sede": "Brumado",
-        "municipalities_moved": 4,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.024329965,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 112,
-      "timestamp": "2026-02-11T12:12:14.980400",
+      "id": 105,
+      "timestamp": "2026-02-20T12:01:49.513370",
       "source_utp": "431",
       "target_utp": "520",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.76h",
       "details": {
         "sede_id": 2905008,
-        "is_sede": true,
+        "sede_destino": 2911709,
         "nm_sede": "Caculé",
+        "is_sede": true,
         "municipalities_moved": 12,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.75701804,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 113,
-      "timestamp": "2026-02-11T12:12:14.999188",
+      "id": 106,
+      "timestamp": "2026-02-20T12:01:49.535470",
       "source_utp": "432",
       "target_utp": "520",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.64h",
       "details": {
         "sede_id": 2905206,
-        "is_sede": true,
+        "sede_destino": 2911709,
         "nm_sede": "Caetité",
+        "is_sede": true,
         "municipalities_moved": 6,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.639161351,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 114,
-      "timestamp": "2026-02-11T12:12:15.013581",
+      "id": 107,
+      "timestamp": "2026-02-20T12:01:49.553621",
       "source_utp": "501",
       "target_utp": "362",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.49h",
       "details": {
         "sede_id": 2910404,
-        "is_sede": true,
+        "sede_destino": 2933307,
         "nm_sede": "Encruzilhada",
+        "is_sede": true,
         "municipalities_moved": 4,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.49290488,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 115,
-      "timestamp": "2026-02-11T12:12:15.086480",
+      "id": 108,
+      "timestamp": "2026-02-20T12:01:49.625438",
       "source_utp": "159",
       "target_utp": "126",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.59h",
       "details": {
         "sede_id": 2914802,
-        "is_sede": true,
+        "sede_destino": 2913606,
         "nm_sede": "Itabuna",
+        "is_sede": true,
         "municipalities_moved": 20,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.587222335,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 116,
-      "timestamp": "2026-02-11T12:12:15.098642",
+      "id": 109,
+      "timestamp": "2026-02-20T12:01:49.643119",
       "source_utp": "699",
       "target_utp": "538",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.20h",
       "details": {
         "sede_id": 2929255,
-        "is_sede": true,
+        "sede_destino": 2914604,
         "nm_sede": "São Gabriel",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 0.204835869,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 117,
-      "timestamp": "2026-02-11T12:12:15.144493",
-      "source_utp": "623",
-      "target_utp": "726",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.72h",
-      "details": {
-        "sede_id": 2929909,
-        "is_sede": true,
-        "nm_sede": "Seabra",
-        "municipalities_moved": 5,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.715251803,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 118,
-      "timestamp": "2026-02-11T12:12:15.186662",
-      "source_utp": "373",
-      "target_utp": "556",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.76h",
-      "details": {
-        "sede_id": 3101706,
-        "is_sede": true,
-        "nm_sede": "Almenara",
-        "municipalities_moved": 8,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.76054312,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 119,
-      "timestamp": "2026-02-11T12:12:15.209597",
-      "source_utp": "21",
-      "target_utp": "352",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.68h",
-      "details": {
-        "sede_id": 3103504,
-        "is_sede": true,
-        "nm_sede": "Araguari",
-        "municipalities_moved": 8,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.676671096,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 120,
-      "timestamp": "2026-02-11T12:12:15.235714",
-      "source_utp": "29",
-      "target_utp": "351",
-      "reason": "Sede consolidation (full UTP): Score 2->2, Travel 1.77h",
-      "details": {
-        "sede_id": 3104007,
-        "is_sede": true,
-        "nm_sede": "Araxá",
-        "municipalities_moved": 9,
-        "score_origem": 2,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.770832333,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 121,
-      "timestamp": "2026-02-11T12:12:15.307866",
-      "source_utp": "35",
-      "target_utp": "189",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.46h",
-      "details": {
-        "sede_id": 3105608,
-        "is_sede": true,
-        "nm_sede": "Barbacena",
-        "municipalities_moved": 19,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.457403264,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 122,
-      "timestamp": "2026-02-11T12:12:15.355307",
+      "id": 110,
+      "timestamp": "2026-02-20T12:01:49.676942",
       "source_utp": "413",
       "target_utp": "558",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.44h",
       "details": {
         "sede_id": 3108552,
-        "is_sede": true,
+        "sede_destino": 3136306,
         "nm_sede": "Brasilândia de Minas",
+        "is_sede": true,
         "municipalities_moved": 7,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 1.440615476,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 123,
-      "timestamp": "2026-02-11T12:12:15.419839",
-      "source_utp": "417",
-      "target_utp": "197",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.84h",
-      "details": {
-        "sede_id": 3108602,
-        "is_sede": true,
-        "nm_sede": "Brasília de Minas",
-        "municipalities_moved": 10,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.840957738,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 124,
-      "timestamp": "2026-02-11T12:12:15.440285",
-      "source_utp": "83",
-      "target_utp": "313",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.47h",
-      "details": {
-        "sede_id": 3115508,
-        "is_sede": true,
-        "nm_sede": "Caxambu",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.473118338,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 125,
-      "timestamp": "2026-02-11T12:12:15.482674",
-      "source_utp": "101",
-      "target_utp": "236",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.00h",
-      "details": {
-        "sede_id": 3120904,
-        "is_sede": true,
-        "nm_sede": "Curvelo",
-        "municipalities_moved": 14,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.99770614,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 126,
-      "timestamp": "2026-02-11T12:12:15.516944",
-      "source_utp": "546",
-      "target_utp": "688",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.16h",
-      "details": {
-        "sede_id": 3134202,
-        "is_sede": true,
-        "nm_sede": "Ituiutaba",
-        "municipalities_moved": 5,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.16309968,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 127,
-      "timestamp": "2026-02-11T12:12:15.552167",
+      "id": 111,
+      "timestamp": "2026-02-20T12:01:49.748674",
       "source_utp": "558",
       "target_utp": "625",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.40h",
       "details": {
         "sede_id": 3136306,
-        "is_sede": true,
+        "sede_destino": 3147006,
         "nm_sede": "João Pinheiro",
+        "is_sede": true,
         "municipalities_moved": 9,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.396492904,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 128,
-      "timestamp": "2026-02-11T12:12:15.590954",
-      "source_utp": "8",
-      "target_utp": "221",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.96h",
-      "details": {
-        "sede_id": 3138401,
-        "is_sede": true,
-        "nm_sede": "Leopoldina",
-        "municipalities_moved": 8,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.961996683,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 129,
-      "timestamp": "2026-02-11T12:12:15.686420",
+      "id": 112,
+      "timestamp": "2026-02-20T12:01:49.779301",
       "source_utp": "322",
       "target_utp": "189",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.95h",
       "details": {
         "sede_id": 3138609,
-        "is_sede": true,
+        "sede_destino": 3136702,
         "nm_sede": "Lima Duarte",
+        "is_sede": true,
         "municipalities_moved": 10,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.945237885,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 130,
-      "timestamp": "2026-02-11T12:12:15.697614",
-      "source_utp": "213",
-      "target_utp": "323",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.51h",
-      "details": {
-        "sede_id": 3141108,
-        "is_sede": true,
-        "nm_sede": "Matozinhos",
-        "municipalities_moved": 2,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.514444543,
-        "rm_origem": "Recorte Metropolitano de Belo Horizonte",
-        "rm_destino": "Recorte Metropolitano de Belo Horizonte"
-      }
-    },
-    {
-      "id": 131,
-      "timestamp": "2026-02-11T12:12:15.719937",
+      "id": 113,
+      "timestamp": "2026-02-20T12:01:49.801720",
       "source_utp": "76",
       "target_utp": "335",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.50h",
       "details": {
         "sede_id": 3146305,
-        "is_sede": true,
+        "sede_destino": 3168606,
         "nm_sede": "Padre Paraíso",
+        "is_sede": true,
         "municipalities_moved": 7,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.499471662,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 132,
-      "timestamp": "2026-02-11T12:12:15.735158",
+      "id": 114,
+      "timestamp": "2026-02-20T12:01:49.816795",
       "source_utp": "16",
       "target_utp": "251",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.44h",
       "details": {
         "sede_id": 4301305,
-        "is_sede": true,
+        "sede_destino": 4314407,
         "nm_sede": "Arroio Grande",
+        "is_sede": true,
         "municipalities_moved": 4,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.441707534,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 133,
-      "timestamp": "2026-02-11T12:12:15.746788",
+      "id": 115,
+      "timestamp": "2026-02-20T12:01:49.827255",
       "source_utp": "97",
       "target_utp": "197",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.75h",
       "details": {
         "sede_id": 3150570,
-        "is_sede": true,
+        "sede_destino": 3161106,
         "nm_sede": "Pintópolis",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 1.747965012,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 134,
-      "timestamp": "2026-02-11T12:12:15.810203",
-      "source_utp": "197",
-      "target_utp": "97",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.75h",
-      "details": {
-        "sede_id": 3161106,
-        "is_sede": true,
-        "nm_sede": "São Francisco",
-        "municipalities_moved": 16,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.747965012,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 135,
-      "timestamp": "2026-02-11T12:12:15.904120",
-      "source_utp": "351",
-      "target_utp": "352",
-      "reason": "Sede consolidation (full UTP): Score 2->2, Travel 1.26h",
-      "details": {
-        "sede_id": 3170107,
-        "is_sede": true,
-        "nm_sede": "Uberaba",
-        "municipalities_moved": 17,
-        "score_origem": 2,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.263832489,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 136,
-      "timestamp": "2026-02-11T12:12:15.990200",
-      "source_utp": "92",
-      "target_utp": "198",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.41h",
-      "details": {
-        "sede_id": 3201506,
-        "is_sede": true,
-        "nm_sede": "Colatina",
-        "municipalities_moved": 25,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.407808543,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 137,
-      "timestamp": "2026-02-11T12:12:16.004381",
-      "source_utp": "767",
-      "target_utp": "364",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.61h",
-      "details": {
-        "sede_id": 3300100,
-        "is_sede": true,
-        "nm_sede": "Angra dos Reis",
-        "municipalities_moved": 3,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.605476722,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 138,
-      "timestamp": "2026-02-11T12:12:16.038885",
+      "id": 116,
+      "timestamp": "2026-02-20T12:01:49.860568",
       "source_utp": "356",
       "target_utp": "364",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.05h",
       "details": {
         "sede_id": 3306107,
-        "is_sede": true,
+        "sede_destino": 3306305,
         "nm_sede": "Valença",
+        "is_sede": true,
         "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.051526777,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 139,
-      "timestamp": "2026-02-11T12:12:16.053404",
-      "source_utp": "215",
-      "target_utp": "364",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.82h",
-      "details": {
-        "sede_id": 3306206,
-        "is_sede": true,
-        "nm_sede": "Vassouras",
-        "municipalities_moved": 3,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.815192294,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 140,
-      "timestamp": "2026-02-11T12:12:16.067130",
+      "id": 117,
+      "timestamp": "2026-02-20T12:01:49.873602",
       "source_utp": "31",
       "target_utp": "NOVA15",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.66h",
       "details": {
         "sede_id": 3503802,
-        "is_sede": true,
+        "sede_destino": 3509502,
         "nm_sede": "Artur Nogueira",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.661627173,
         "rm_origem": "Recorte Metropolitano de Campinas",
-        "rm_destino": "Recorte Metropolitano de Campinas"
+        "rm_destino": "Recorte Metropolitano de Campinas",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 141,
-      "timestamp": "2026-02-11T12:12:16.096884",
-      "source_utp": "36",
-      "target_utp": "180",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.51h",
-      "details": {
-        "sede_id": 3505302,
-        "is_sede": true,
-        "nm_sede": "Barra Bonita",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.510074814,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 142,
-      "timestamp": "2026-02-11T12:12:16.159020",
-      "source_utp": "45",
-      "target_utp": "301",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.31h",
-      "details": {
-        "sede_id": 3506508,
-        "is_sede": true,
-        "nm_sede": "Birigui",
-        "municipalities_moved": 9,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.314960574,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 143,
-      "timestamp": "2026-02-11T12:12:16.193021",
-      "source_utp": "200",
-      "target_utp": "12",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.31h",
-      "details": {
-        "sede_id": 3508603,
-        "is_sede": true,
-        "nm_sede": "Cachoeira Paulista",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.306265517,
-        "rm_origem": "Recorte Metropolitano do Vale do Paraíba e Litoral Norte",
-        "rm_destino": "Recorte Metropolitano do Vale do Paraíba e Litoral Norte"
-      }
-    },
-    {
-      "id": 144,
-      "timestamp": "2026-02-11T12:12:16.224620",
-      "source_utp": "125",
-      "target_utp": "663",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.52h",
-      "details": {
-        "sede_id": 3509254,
-        "is_sede": true,
-        "nm_sede": "Cajati",
-        "municipalities_moved": 10,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.521284599,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 145,
-      "timestamp": "2026-02-11T12:12:16.250683",
-      "source_utp": "333",
-      "target_utp": "312",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.14h",
-      "details": {
-        "sede_id": 3509700,
-        "is_sede": true,
-        "nm_sede": "Campos do Jordão",
-        "municipalities_moved": 8,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.1433244,
-        "rm_origem": "Recorte Metropolitano do Vale do Paraíba e Litoral Norte",
-        "rm_destino": "Recorte Metropolitano do Vale do Paraíba e Litoral Norte"
-      }
-    },
-    {
-      "id": 146,
-      "timestamp": "2026-02-11T12:12:16.304357",
-      "source_utp": "108",
-      "target_utp": "365",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.49h",
-      "details": {
-        "sede_id": 3515509,
-        "is_sede": true,
-        "nm_sede": "Fernandópolis",
-        "municipalities_moved": 13,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.491637603,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 147,
-      "timestamp": "2026-02-11T12:12:16.321272",
-      "source_utp": "165",
-      "target_utp": "332",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.63h",
-      "details": {
-        "sede_id": 3522307,
-        "is_sede": true,
-        "nm_sede": "Itapetininga",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.634198243,
-        "rm_origem": "Recorte Metropolitano de Sorocaba",
-        "rm_destino": "Recorte Metropolitano de Sorocaba"
-      }
-    },
-    {
-      "id": 148,
-      "timestamp": "2026-02-11T12:12:16.337994",
-      "source_utp": "168",
-      "target_utp": "NOVA15",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.48h",
-      "details": {
-        "sede_id": 3523404,
-        "is_sede": true,
-        "nm_sede": "Itatiba",
-        "municipalities_moved": 2,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.478522504,
-        "rm_origem": "Recorte Metropolitano de Campinas",
-        "rm_destino": "Recorte Metropolitano de Campinas"
-      }
-    },
-    {
-      "id": 149,
-      "timestamp": "2026-02-11T12:12:16.474786",
-      "source_utp": "175",
-      "target_utp": "294",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.58h",
-      "details": {
-        "sede_id": 3524808,
-        "is_sede": true,
-        "nm_sede": "Jales",
-        "municipalities_moved": 19,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.582918837,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 150,
-      "timestamp": "2026-02-11T12:12:16.488610",
+      "id": 118,
+      "timestamp": "2026-02-20T12:01:49.887311",
       "source_utp": "707",
       "target_utp": "281",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.74h",
       "details": {
         "sede_id": 3534302,
-        "is_sede": true,
+        "sede_destino": 3543402,
         "nm_sede": "Orlândia",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.739717976,
         "rm_origem": "Recorte Metropolitano de Ribeirão Preto",
-        "rm_destino": "Recorte Metropolitano de Ribeirão Preto"
+        "rm_destino": "Recorte Metropolitano de Ribeirão Preto",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 151,
-      "timestamp": "2026-02-11T12:12:16.510444",
-      "source_utp": "256",
-      "target_utp": "317",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.61h",
-      "details": {
-        "sede_id": 3538709,
-        "is_sede": true,
-        "nm_sede": "Piracicaba",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.61247748,
-        "rm_origem": "Recorte Metropolitano de Piracicaba",
-        "rm_destino": "Recorte Metropolitano de Piracicaba"
-      }
-    },
-    {
-      "id": 152,
-      "timestamp": "2026-02-11T12:12:16.529547",
+      "id": 119,
+      "timestamp": "2026-02-20T12:01:49.915181",
       "source_utp": "258",
       "target_utp": "274",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.47h",
       "details": {
         "sede_id": 3539202,
-        "is_sede": true,
+        "sede_destino": 3541406,
         "nm_sede": "Pirapozinho",
+        "is_sede": true,
         "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.468090913,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 153,
-      "timestamp": "2026-02-11T12:12:16.548923",
-      "source_utp": "226",
-      "target_utp": "462",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.45h",
-      "details": {
-        "sede_id": 3544251,
-        "is_sede": true,
-        "nm_sede": "Rosana",
-        "municipalities_moved": 5,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.450785791,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 154,
-      "timestamp": "2026-02-11T12:12:16.563570",
+      "id": 120,
+      "timestamp": "2026-02-20T12:01:49.931232",
       "source_utp": "712",
       "target_utp": "50",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.39h",
       "details": {
         "sede_id": 3550100,
-        "is_sede": true,
+        "sede_destino": 3507506,
         "nm_sede": "São Manuel",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.390549527,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 155,
-      "timestamp": "2026-02-11T12:12:16.602080",
-      "source_utp": "332",
-      "target_utp": "48",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.38h",
-      "details": {
-        "sede_id": 3554003,
-        "is_sede": true,
-        "nm_sede": "Tatuí",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.377178349,
-        "rm_origem": "Recorte Metropolitano de Sorocaba",
-        "rm_destino": "Recorte Metropolitano de Sorocaba"
-      }
-    },
-    {
-      "id": 156,
-      "timestamp": "2026-02-11T12:12:16.628672",
+      "id": 121,
+      "timestamp": "2026-02-20T12:01:49.984154",
       "source_utp": "402",
       "target_utp": "481",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.55h",
       "details": {
         "sede_id": 4102406,
-        "is_sede": true,
+        "sede_destino": 4106407,
         "nm_sede": "Bandeirantes",
+        "is_sede": true,
         "municipalities_moved": 6,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.552988975,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 157,
-      "timestamp": "2026-02-11T12:12:16.644889",
-      "source_utp": "661",
-      "target_utp": "79",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.13h",
-      "details": {
-        "sede_id": 4104600,
-        "is_sede": true,
-        "nm_sede": "Capitão Leônidas Marques",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.129288409,
-        "rm_origem": "Recorte Metropolitano de Cascavel",
-        "rm_destino": "Recorte Metropolitano de Cascavel"
-      }
-    },
-    {
-      "id": 158,
-      "timestamp": "2026-02-11T12:12:16.660594",
-      "source_utp": "460",
-      "target_utp": "264",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.53h",
-      "details": {
-        "sede_id": 4104907,
-        "is_sede": true,
-        "nm_sede": "Castro",
-        "municipalities_moved": 3,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.530350672,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 159,
-      "timestamp": "2026-02-11T12:12:16.714419",
-      "source_utp": "384",
-      "target_utp": "230",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.44h",
-      "details": {
-        "sede_id": 4111803,
-        "is_sede": true,
-        "nm_sede": "Jacarezinho",
-        "municipalities_moved": 7,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.442282416,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 160,
-      "timestamp": "2026-02-11T12:12:16.746201",
-      "source_utp": "177",
-      "target_utp": "211",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.39h",
-      "details": {
-        "sede_id": 4114203,
-        "is_sede": true,
-        "nm_sede": "Mandaguari",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.392902838,
-        "rm_origem": "Recorte Metropolitano de Maringá",
-        "rm_destino": "Recorte Metropolitano de Maringá"
-      }
-    },
-    {
-      "id": 161,
-      "timestamp": "2026-02-11T12:12:16.768682",
-      "source_utp": "582",
-      "target_utp": "340",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.76h",
-      "details": {
-        "sede_id": 4114609,
-        "is_sede": true,
-        "nm_sede": "Marechal Cândido Rondon",
-        "municipalities_moved": 7,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.759537951,
-        "rm_origem": "Recorte Metropolitano de Toledo",
-        "rm_destino": "Recorte Metropolitano de Toledo"
-      }
-    },
-    {
-      "id": 162,
-      "timestamp": "2026-02-11T12:12:16.787639",
-      "source_utp": "624",
-      "target_utp": "340",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.02h",
-      "details": {
-        "sede_id": 4117909,
-        "is_sede": true,
-        "nm_sede": "Palotina",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.018414962,
-        "rm_origem": "Recorte Metropolitano de Toledo",
-        "rm_destino": "Recorte Metropolitano de Toledo"
-      }
-    },
-    {
-      "id": 163,
-      "timestamp": "2026-02-11T12:12:16.798071",
-      "source_utp": "212",
-      "target_utp": "234",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.58h",
-      "details": {
-        "sede_id": 4119954,
-        "is_sede": true,
-        "nm_sede": "Pontal do Paraná",
-        "municipalities_moved": 2,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.578942563,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 164,
-      "timestamp": "2026-02-11T12:12:16.808834",
+      "id": 122,
+      "timestamp": "2026-02-20T12:01:49.998016",
       "source_utp": "229",
       "target_utp": "191",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.80h",
       "details": {
         "sede_id": 4211751,
-        "is_sede": true,
+        "sede_destino": 4209300,
         "nm_sede": "Otacílio Costa",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.801578554,
         "rm_origem": "Recorte Metropolitano de Lages",
-        "rm_destino": "Recorte Metropolitano de Lages"
+        "rm_destino": "Recorte Metropolitano de Lages",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 165,
-      "timestamp": "2026-02-11T12:12:16.828059",
+      "id": 123,
+      "timestamp": "2026-02-20T12:01:50.036416",
       "source_utp": "304",
       "target_utp": "88",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.86h",
       "details": {
         "sede_id": 4212908,
-        "is_sede": true,
+        "sede_destino": 4204202,
         "nm_sede": "Pinhalzinho",
+        "is_sede": true,
         "municipalities_moved": 6,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.863338415,
         "rm_origem": "Recorte Metropolitano de Chapecó",
-        "rm_destino": "Recorte Metropolitano de Chapecó"
+        "rm_destino": "Recorte Metropolitano de Chapecó",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 166,
-      "timestamp": "2026-02-11T12:12:16.859949",
-      "source_utp": "706",
-      "target_utp": "191",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.23h",
-      "details": {
-        "sede_id": 4216503,
-        "is_sede": true,
-        "nm_sede": "São Joaquim",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.230994403,
-        "rm_origem": "Recorte Metropolitano de Lages",
-        "rm_destino": "Recorte Metropolitano de Lages"
-      }
-    },
-    {
-      "id": 167,
-      "timestamp": "2026-02-11T12:12:16.871124",
-      "source_utp": "372",
-      "target_utp": "672",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.55h",
-      "details": {
-        "sede_id": 4300406,
-        "is_sede": true,
-        "nm_sede": "Alegrete",
-        "municipalities_moved": 2,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 1.550659128,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 168,
-      "timestamp": "2026-02-11T12:12:16.891176",
-      "source_utp": "43",
-      "target_utp": "84",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.52h",
-      "details": {
-        "sede_id": 4302105,
-        "is_sede": true,
-        "nm_sede": "Bento Gonçalves",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.520760946,
-        "rm_origem": "Recorte Metropolitano da Serra Gaúcha",
-        "rm_destino": "Recorte Metropolitano da Serra Gaúcha"
-      }
-    },
-    {
-      "id": 169,
-      "timestamp": "2026-02-11T12:12:16.914706",
-      "source_utp": "427",
-      "target_utp": "717",
-      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.62h",
-      "details": {
-        "sede_id": 4302808,
-        "is_sede": true,
-        "nm_sede": "Caçapava do Sul",
-        "municipalities_moved": 4,
-        "score_origem": 0,
-        "score_destino": 0,
-        "tempo_viagem_h": 0.617702483,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 170,
-      "timestamp": "2026-02-11T12:12:16.984439",
+      "id": 124,
+      "timestamp": "2026-02-20T12:01:50.073701",
       "source_utp": "454",
       "target_utp": "240",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.75h",
       "details": {
         "sede_id": 4304705,
-        "is_sede": true,
+        "sede_destino": 4314100,
         "nm_sede": "Carazinho",
+        "is_sede": true,
         "municipalities_moved": 11,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.747803115,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 171,
-      "timestamp": "2026-02-11T12:12:17.011778",
-      "source_utp": "491",
-      "target_utp": "535",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.81h",
-      "details": {
-        "sede_id": 4306106,
-        "is_sede": true,
-        "nm_sede": "Cruz Alta",
-        "municipalities_moved": 2,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.811832703,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 172,
-      "timestamp": "2026-02-11T12:12:17.052171",
-      "source_utp": "535",
-      "target_utp": "299",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.87h",
-      "details": {
-        "sede_id": 4310207,
-        "is_sede": true,
-        "nm_sede": "Ijuí",
-        "municipalities_moved": 15,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.873129349,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 173,
-      "timestamp": "2026-02-11T12:12:17.062574",
+      "id": 125,
+      "timestamp": "2026-02-20T12:01:50.084838",
       "source_utp": "144",
       "target_utp": "156",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.60h",
       "details": {
         "sede_id": 4310603,
-        "is_sede": true,
+        "sede_destino": 4322400,
         "nm_sede": "Itaqui",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.602106608,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 174,
-      "timestamp": "2026-02-11T12:12:17.075080",
+      "id": 126,
+      "timestamp": "2026-02-20T12:01:50.098195",
       "source_utp": "596",
       "target_utp": "267",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.82h",
       "details": {
         "sede_id": 4312401,
-        "is_sede": true,
+        "sede_destino": 4314902,
         "nm_sede": "Montenegro",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.81536076,
         "rm_origem": "Recorte Metropolitano de Porto Alegre",
-        "rm_destino": "Recorte Metropolitano de Porto Alegre"
+        "rm_destino": "Recorte Metropolitano de Porto Alegre",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 175,
-      "timestamp": "2026-02-11T12:12:17.111958",
-      "source_utp": "228",
-      "target_utp": "267",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 0.60h",
-      "details": {
-        "sede_id": 4313409,
-        "is_sede": true,
-        "nm_sede": "Novo Hamburgo",
-        "municipalities_moved": 7,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.59632848,
-        "rm_origem": "Recorte Metropolitano de Porto Alegre",
-        "rm_destino": "Recorte Metropolitano de Porto Alegre"
-      }
-    },
-    {
-      "id": 176,
-      "timestamp": "2026-02-11T12:12:17.122949",
-      "source_utp": "286",
-      "target_utp": "251",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.07h",
-      "details": {
-        "sede_id": 4315602,
-        "is_sede": true,
-        "nm_sede": "Rio Grande",
-        "municipalities_moved": 2,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.074340866,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 177,
-      "timestamp": "2026-02-11T12:12:17.142434",
-      "source_utp": "672",
-      "target_utp": "497",
-      "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.90h",
-      "details": {
-        "sede_id": 4316402,
-        "is_sede": true,
-        "nm_sede": "Rosário do Sul",
-        "municipalities_moved": 6,
-        "score_origem": 0,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.89840436,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 178,
-      "timestamp": "2026-02-11T12:12:17.173855",
-      "source_utp": "293",
-      "target_utp": "359",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.48h",
-      "details": {
-        "sede_id": 4316808,
-        "is_sede": true,
-        "nm_sede": "Santa Cruz do Sul",
-        "municipalities_moved": 8,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.484162167,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 179,
-      "timestamp": "2026-02-11T12:12:17.260622",
+      "id": 127,
+      "timestamp": "2026-02-20T12:01:50.158945",
       "source_utp": "687",
       "target_utp": "299",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.80h",
       "details": {
         "sede_id": 4317202,
-        "is_sede": true,
+        "sede_destino": 4317509,
         "nm_sede": "Santa Rosa",
+        "is_sede": true,
         "municipalities_moved": 15,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.799256809,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 180,
-      "timestamp": "2026-02-11T12:12:17.283290",
-      "source_utp": "717",
-      "target_utp": "497",
-      "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.87h",
-      "details": {
-        "sede_id": 4319604,
-        "is_sede": true,
-        "nm_sede": "São Sepé",
-        "municipalities_moved": 7,
-        "score_origem": 0,
-        "score_destino": 2,
-        "tempo_viagem_h": 0.871069002,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 181,
-      "timestamp": "2026-02-11T12:12:17.304738",
-      "source_utp": "338",
-      "target_utp": "193",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.43h",
-      "details": {
-        "sede_id": 4321451,
-        "is_sede": true,
-        "nm_sede": "Teutônia",
-        "municipalities_moved": 7,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.43248044,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 182,
-      "timestamp": "2026-02-11T12:12:17.351409",
-      "source_utp": "359",
-      "target_utp": "293",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.44h",
-      "details": {
-        "sede_id": 4322608,
-        "is_sede": true,
-        "nm_sede": "Venâncio Aires",
-        "municipalities_moved": 11,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.439162167,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 183,
-      "timestamp": "2026-02-11T12:12:17.363933",
+      "id": 128,
+      "timestamp": "2026-02-20T12:01:50.180815",
       "source_utp": "380",
       "target_utp": "148",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.66h",
       "details": {
         "sede_id": 5000609,
-        "is_sede": true,
+        "sede_destino": 5006606,
         "nm_sede": "Amambai",
+        "is_sede": true,
         "municipalities_moved": 3,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.6642702,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 184,
-      "timestamp": "2026-02-11T12:12:17.374382",
+      "id": 129,
+      "timestamp": "2026-02-20T12:01:50.192090",
       "source_utp": "386",
       "target_utp": "294",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 0.51h",
       "details": {
         "sede_id": 5001003,
-        "is_sede": true,
+        "sede_destino": 3546603,
         "nm_sede": "Aparecida do Taboado",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 0.505880392,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 185,
-      "timestamp": "2026-02-11T12:12:17.401102",
-      "source_utp": "103",
-      "target_utp": "148",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.69h",
-      "details": {
-        "sede_id": 5003702,
-        "is_sede": true,
-        "nm_sede": "Dourados",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.688325838,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 186,
-      "timestamp": "2026-02-11T12:12:17.413183",
+      "id": 130,
+      "timestamp": "2026-02-20T12:01:50.206547",
       "source_utp": "580",
       "target_utp": "148",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.97h",
       "details": {
         "sede_id": 5005400,
-        "is_sede": true,
+        "sede_destino": 5006606,
         "nm_sede": "Maracaju",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.970344533,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 187,
-      "timestamp": "2026-02-11T12:12:17.451808",
+      "id": 131,
+      "timestamp": "2026-02-20T12:01:50.244003",
       "source_utp": "612",
       "target_utp": "784",
       "reason": "Sede consolidation (full UTP): Score 0->1, Travel 1.26h",
       "details": {
         "sede_id": 5100201,
-        "is_sede": true,
+        "sede_destino": 5102702,
         "nm_sede": "Água Boa",
+        "is_sede": true,
         "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 1,
         "tempo_viagem_h": 1.256631694,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 188,
-      "timestamp": "2026-02-11T12:12:17.492791",
+      "id": 132,
+      "timestamp": "2026-02-20T12:01:50.281264",
       "source_utp": "464",
       "target_utp": "98",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 1.69h",
       "details": {
         "sede_id": 5103007,
-        "is_sede": true,
+        "sede_destino": 5103403,
         "nm_sede": "Chapada dos Guimarães",
+        "is_sede": true,
         "municipalities_moved": 5,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 1.693232382,
         "rm_origem": "Recorte Metropolitano do Vale do Rio Cuiabá",
-        "rm_destino": "Recorte Metropolitano do Vale do Rio Cuiabá"
+        "rm_destino": "Recorte Metropolitano do Vale do Rio Cuiabá",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 189,
-      "timestamp": "2026-02-11T12:12:17.507998",
-      "source_utp": "572",
-      "target_utp": "725",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 0.93h",
-      "details": {
-        "sede_id": 5105259,
-        "is_sede": true,
-        "nm_sede": "Lucas do Rio Verde",
-        "municipalities_moved": 4,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 0.932618232,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 190,
-      "timestamp": "2026-02-11T12:12:17.536836",
-      "source_utp": "725",
-      "target_utp": "324",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.11h",
-      "details": {
-        "sede_id": 5107925,
-        "is_sede": true,
-        "nm_sede": "Sorriso",
-        "municipalities_moved": 10,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.111681223,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 191,
-      "timestamp": "2026-02-11T12:12:17.547615",
+      "id": 133,
+      "timestamp": "2026-02-20T12:01:50.305828",
       "source_utp": "536",
       "target_utp": "642",
       "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.83h",
       "details": {
         "sede_id": 5210109,
-        "is_sede": true,
+        "sede_destino": 5217401,
         "nm_sede": "Ipameri",
+        "is_sede": true,
         "municipalities_moved": 2,
         "score_origem": 0,
         "score_destino": 0,
         "tempo_viagem_h": 0.833984095,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     },
     {
-      "id": 192,
-      "timestamp": "2026-02-11T12:12:17.566679",
-      "source_utp": "555",
-      "target_utp": "287",
-      "reason": "Sede consolidation (full UTP): Score 1->2, Travel 1.27h",
-      "details": {
-        "sede_id": 5211909,
-        "is_sede": true,
-        "nm_sede": "Jataí",
-        "municipalities_moved": 6,
-        "score_origem": 1,
-        "score_destino": 2,
-        "tempo_viagem_h": 1.266105458,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 193,
-      "timestamp": "2026-02-11T12:12:17.580271",
-      "source_utp": "590",
-      "target_utp": "555",
-      "reason": "Sede consolidation (full UTP): Score 1->1, Travel 1.49h",
-      "details": {
-        "sede_id": 5213103,
-        "is_sede": true,
-        "nm_sede": "Mineiros",
-        "municipalities_moved": 3,
-        "score_origem": 1,
-        "score_destino": 1,
-        "tempo_viagem_h": 1.485204507,
-        "rm_origem": "",
-        "rm_destino": ""
-      }
-    },
-    {
-      "id": 194,
-      "timestamp": "2026-02-11T12:12:17.619640",
+      "id": 134,
+      "timestamp": "2026-02-20T12:01:50.330190",
       "source_utp": "680",
       "target_utp": "287",
       "reason": "Sede consolidation (full UTP): Score 0->2, Travel 0.56h",
       "details": {
         "sede_id": 5219308,
-        "is_sede": true,
+        "sede_destino": 5218805,
         "nm_sede": "Santa Helena de Goiás",
+        "is_sede": true,
         "municipalities_moved": 7,
         "score_origem": 0,
         "score_destino": 2,
         "tempo_viagem_h": 0.555721325,
         "rm_origem": "",
-        "rm_destino": ""
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
+      }
+    },
+    {
+      "id": 135,
+      "timestamp": "2026-02-20T12:01:50.354975",
+      "source_utp": "409",
+      "target_utp": "366",
+      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.78h",
+      "details": {
+        "sede_id": 2601607,
+        "sede_destino": 2603009,
+        "nm_sede": "Belém do São Francisco",
+        "is_sede": true,
+        "municipalities_moved": 6,
+        "score_origem": 0,
+        "score_destino": 0,
+        "tempo_viagem_h": 0.780812424,
+        "rm_origem": "",
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
+      }
+    },
+    {
+      "id": 136,
+      "timestamp": "2026-02-20T12:01:50.365523",
+      "source_utp": "372",
+      "target_utp": "672",
+      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 1.55h",
+      "details": {
+        "sede_id": 4300406,
+        "sede_destino": 4316402,
+        "nm_sede": "Alegrete",
+        "is_sede": true,
+        "municipalities_moved": 2,
+        "score_origem": 0,
+        "score_destino": 0,
+        "tempo_viagem_h": 1.550659128,
+        "rm_origem": "",
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
+      }
+    },
+    {
+      "id": 137,
+      "timestamp": "2026-02-20T12:01:50.381687",
+      "source_utp": "427",
+      "target_utp": "717",
+      "reason": "Sede consolidation (full UTP): Score 0->0, Travel 0.62h",
+      "details": {
+        "sede_id": 4302808,
+        "sede_destino": 4319604,
+        "nm_sede": "Caçapava do Sul",
+        "is_sede": true,
+        "municipalities_moved": 4,
+        "score_origem": 0,
+        "score_destino": 0,
+        "tempo_viagem_h": 0.617702483,
+        "rm_origem": "",
+        "rm_destino": "",
+        "transitive": false,
+        "transitive_reason": ""
       }
     }
   ]

@@ -4,8 +4,116 @@ Utility functions for flow analysis and visualization
 import pandas as pd
 from typing import Dict, List, Tuple, Optional
 import logging
+import unicodedata
+from pathlib import Path
+import re
 
 logger = logging.getLogger(__name__)
+
+
+# --------------------------------------------------------------------------- #
+#  IDH / PIB data loader                                                       #
+# --------------------------------------------------------------------------- #
+
+def _normalize(text: str) -> str:
+    """Remove accents and lowercase a string for fuzzy name matching."""
+    nfkd = unicodedata.normalize('NFKD', str(text))
+    return ''.join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+
+
+def load_idh_pib_data(
+    raw_dir: Path = None
+) -> Tuple[Dict[str, float], Dict[str, float]]:
+    """
+    Load IDH and PIB data from the raw files.
+
+    Returns
+    -------
+    idh_by_cd_mun : dict  {cd_mun_7digits_str -> float}  – IDHM 2010
+    pib_by_cd_mun : dict  {cd_mun_7digits_str -> float}  – PIB 2023 (Mil Reais)
+    """
+    if raw_dir is None:
+        raw_dir = Path(__file__).parent.parent.parent / "data" / "01_raw"
+
+    idh_by_cd_mun: Dict[str, float] = {}
+    pib_by_cd_mun: Dict[str, float] = {}
+
+    # ---- PIB (has IBGE code directly) -------------------------------------- #
+    pib_path = raw_dir / "PIB_municipios.xlsx"
+    if pib_path.exists():
+        try:
+            df_pib = pd.read_excel(pib_path, header=2)
+            df_pib.columns = ['nivel', 'cod', 'nome', 'pib']
+            # Keep only municipal rows
+            df_pib = df_pib[df_pib['nivel'] == 'MU'].copy()
+            df_pib['cod'] = pd.to_numeric(df_pib['cod'], errors='coerce')
+            df_pib['pib'] = pd.to_numeric(df_pib['pib'], errors='coerce')
+            df_pib = df_pib.dropna(subset=['cod', 'pib'])
+            # cod is 7-digit; convert to string key
+            df_pib['cd_mun'] = df_pib['cod'].astype(int).astype(str)
+            pib_by_cd_mun = dict(zip(df_pib['cd_mun'], df_pib['pib']))
+            logger.info(f"PIB loaded: {len(pib_by_cd_mun)} municipalities")
+        except Exception as e:
+            logger.warning(f"Could not load PIB data: {e}")
+    else:
+        logger.warning(f"PIB file not found: {pib_path}")
+
+    # ---- IDH (name-based; no IBGE code) ------------------------------------ #
+    idh_path = raw_dir / "IDH_municipios.csv"
+    if idh_path.exists():
+        try:
+            df_idh = pd.read_csv(idh_path, sep=';', encoding='utf-8-sig', low_memory=False)
+            # Keep only municipality rows – they follow the pattern "Name (UF)"
+            mun_mask = df_idh['Territorialidades'].str.match(r'.+\s\(\w{2}\)', na=False)
+            df_idh = df_idh[mun_mask].copy()
+
+            # Parse name and UF from "Name (UF)"
+            parsed = df_idh['Territorialidades'].str.extract(r'^(.+)\s+\((\w{2})\)$')
+            df_idh['_nm'] = parsed[0].apply(_normalize)
+            df_idh['_uf'] = parsed[1].str.upper()
+
+            # Parse IDHM 2010 (comma decimal separator)
+            idh_col = 'IDHM 2010'
+            df_idh[idh_col] = (
+                df_idh[idh_col]
+                .astype(str)
+                .str.replace(',', '.', regex=False)
+                .str.strip()
+            )
+            df_idh[idh_col] = pd.to_numeric(df_idh[idh_col], errors='coerce')
+            df_idh = df_idh.dropna(subset=[idh_col])
+
+            # Build lookup: (normalized_name, uf) -> idh
+            _idh_by_name_uf: Dict[Tuple[str, str], float] = {}
+            for _, row in df_idh.iterrows():
+                _idh_by_name_uf[(row['_nm'], row['_uf'])] = float(row[idh_col])
+
+            # Cross-reference with PIB to build idh_by_cd_mun
+            # We need the PIB `nome` column which has "Name (UF)" format too
+            if pib_path.exists() and not df_pib.empty if 'df_pib' in dir() else False:
+                pass  # handled below
+
+            # Store the name-based lookup for runtime use (exposed via closure)
+            load_idh_pib_data._idh_by_name_uf = _idh_by_name_uf
+            logger.info(f"IDH loaded: {len(_idh_by_name_uf)} municipalities")
+        except Exception as e:
+            logger.warning(f"Could not load IDH data: {e}")
+    else:
+        logger.warning(f"IDH file not found: {idh_path}")
+
+    return idh_by_cd_mun, pib_by_cd_mun
+
+
+def get_idh_for_municipality(nm_mun: str, uf: str) -> Optional[float]:
+    """
+    Lookup the IDH 2010 value for a municipality by its name and UF.
+    Requires load_idh_pib_data() to have been called at least once.
+    """
+    lookup = getattr(load_idh_pib_data, '_idh_by_name_uf', None)
+    if not lookup:
+        return None
+    key = (_normalize(nm_mun), str(uf).upper())
+    return lookup.get(key)
 
 
 def get_municipality_total_flow(municipal_data: Dict) -> int:
@@ -95,19 +203,17 @@ def get_top_destinations_for_municipality(
     municipal_data: Dict,
     df_municipios: pd.DataFrame,
     top_n: int = 5,
-    df_impedance: pd.DataFrame = None
-) -> List[Tuple[str, str, str, str, int, float, Optional[float]]]:
+    df_impedance: pd.DataFrame = None,
+    pib_by_cd_mun: Dict = None,
+) -> List[Tuple]:
     """
     Get top N destination flows for a municipality (aggregated across all modals).
-    
-    Args:
-        municipal_data: Dictionary containing municipality data with 'modal_matriz'
-        df_municipios: DataFrame to lookup destination names
-        top_n: Number of top destinations to return
-        df_impedance: Optional DataFrame with travel time data (origem_6, destino_6, tempo_horas)
-        
-    Returns:
-        List of tuples: (dest_cd, dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic, flow_count, percentage, tempo_horas)
+
+    Returns
+    -------
+    List of tuples:
+        (dest_cd, dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic,
+         dest_idh, dest_pib, flow_count, percentage, tempo_horas)
     """
     modal_matriz = municipal_data.get('modal_matriz', {})
     
@@ -168,6 +274,12 @@ def get_top_destinations_for_municipality(
             dest_rm = "-"
             dest_pop = 0
             dest_regic = "-"
+
+        # --- IDH / PIB lookup for this destination ---
+        dest_idh = get_idh_for_municipality(dest_name, dest_uf) if dest_uf else None
+        dest_pib = None
+        if pib_by_cd_mun is not None:
+            dest_pib = pib_by_cd_mun.get(str(dest_cd)) or pib_by_cd_mun.get(dest_cd)
         
         # Calculate travel time if impedance data is available
         tempo_horas = None
@@ -192,9 +304,12 @@ def get_top_destinations_for_municipality(
             continue  # Skip destinations without travel time data
         
         percentage = (flow_count / total_flow) * 100
-        result.append((str(dest_cd), dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic, flow_count, percentage, tempo_horas))
+        result.append((
+            str(dest_cd), dest_name, dest_uf, dest_utp, dest_rm,
+            dest_pop, dest_regic, dest_idh, dest_pib,
+            flow_count, percentage, tempo_horas
+        ))
         
-        #Stop once we have top_n results
         if len(result) >= top_n:
             break
     
@@ -211,7 +326,9 @@ def format_flow_popup_html(
     regic: str = "-",
     populacao: int = 0,
     total_viagens: int = 0,
-    uf: str = ""
+    uf: str = "",
+    idh: Optional[float] = None,
+    pib_mil_reais: Optional[float] = None,
 ) -> str:
     """
     Format flow data as HTML for Folium popup.
@@ -234,7 +351,25 @@ def format_flow_popup_html(
     # Format numbers
     pop_fmt = f"{int(populacao):,}".replace(",", ".") if populacao else "-"
     viagens_fmt = f"{int(total_viagens):,}".replace(",", ".") if total_viagens else "0"
-    
+
+    # Format IDH
+    if idh is not None and not pd.isna(idh):
+        idh_fmt = f"{float(idh):.3f}"
+    else:
+        idh_fmt = "-"
+
+    # Format PIB (Mil Reais -> display as M or B)
+    if pib_mil_reais is not None and not pd.isna(pib_mil_reais):
+        pib_val = float(pib_mil_reais)  # already in Mil R$
+        if pib_val >= 1_000_000:
+            pib_fmt = f"R$ {pib_val / 1_000_000:.1f} bi"
+        elif pib_val >= 1_000:
+            pib_fmt = f"R$ {pib_val / 1_000:.1f} mi"
+        else:
+            pib_fmt = f"R$ {pib_val:,.0f} mil"
+    else:
+        pib_fmt = "-"
+
     # Handle NaN/None strings
     if str(regiao_metropolitana).lower() in ['nan', 'none', '']:
         regiao_metropolitana = "-"
@@ -257,6 +392,12 @@ def format_flow_popup_html(
                     <strong>REGIC:</strong> {regic}<br>
                     <strong>População:</strong> {pop_fmt}<br>
                     <strong>Total Viagens:</strong> {viagens_fmt}
+                </div>
+                <div>
+                    <strong>IDH 2010:</strong> {idh_fmt}
+                </div>
+                <div>
+                    <strong>PIB 2023:</strong> {pib_fmt}
                 </div>
             </div>
         </div>
@@ -282,16 +423,17 @@ def format_flow_popup_html(
         """
         
         for i, item in enumerate(top_destinations, 1):
-            # Unpack based on length to handle potential legacy calls
-            if len(item) == 10:
-                 dest_cd, dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic, flow, pct, tempo = item
+            # Unpack — support 12-item (with IDH/PIB), 10-item, and legacy 7-item tuples
+            if len(item) == 12:
+                dest_cd, dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic, dest_idh, dest_pib, flow, pct, tempo = item
+            elif len(item) == 10:
+                dest_cd, dest_name, dest_uf, dest_utp, dest_rm, dest_pop, dest_regic, flow, pct, tempo = item
+                dest_idh, dest_pib = None, None
             elif len(item) == 7:
-                 # Legacy 7 items
-                 dest_cd, dest_name, dest_uf, dest_utp, flow, pct, tempo = item
-                 dest_rm, dest_pop, dest_regic = "-", 0, "-"
+                dest_cd, dest_name, dest_uf, dest_utp, flow, pct, tempo = item
+                dest_rm, dest_pop, dest_regic, dest_idh, dest_pib = "-", 0, "-", None, None
             else:
-                 # Fallback
-                 continue
+                continue
             
             # Formatting
             flow_fmt = f"{flow:,}".replace(",", ".")
@@ -299,6 +441,24 @@ def format_flow_popup_html(
             
             if pd.isna(dest_rm) or str(dest_rm).strip() == '': dest_rm = '-'
             if pd.isna(dest_regic) or str(dest_regic).strip() == '': dest_regic = '-'
+
+            # Format IDH for destination
+            if dest_idh is not None and not pd.isna(dest_idh):
+                dest_idh_fmt = f"{float(dest_idh):.3f}"
+            else:
+                dest_idh_fmt = "-"
+
+            # Format PIB for destination
+            if dest_pib is not None and not pd.isna(dest_pib):
+                _pv = float(dest_pib)
+                if _pv >= 1_000_000:
+                    dest_pib_fmt = f"R$ {_pv/1_000_000:.1f} bi"
+                elif _pv >= 1_000:
+                    dest_pib_fmt = f"R$ {_pv/1_000:.1f} mi"
+                else:
+                    dest_pib_fmt = f"R$ {_pv:,.0f} mil"
+            else:
+                dest_pib_fmt = "-"
             
             # Format travel time
             if tempo is not None:
@@ -327,6 +487,8 @@ def format_flow_popup_html(
                         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;" title="{dest_regic}">
                             {dest_regic}
                         </div>
+                        IDH: {dest_idh_fmt}<br>
+                        PIB: {dest_pib_fmt}
                     </td>
                     <td style="padding: 4px; text-align: right; font-weight: bold;">
                         {flow_fmt}

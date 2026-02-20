@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "timestamp": "2026-02-11T12:10:40.947144",
+    "timestamp": "2026-02-20T12:00:15.288206",
     "step": "Post-Unitary Consolidation",
     "version": "1.0"
   },
@@ -6607,15 +6607,11 @@
       "utp_id": "98",
       "sede_utp": false
     },
-    "UTP_677": {
-      "type": "utp",
-      "utp_id": "677"
-    },
     "1506203": {
       "type": "municipality",
       "name": "SalinÃ³polis",
-      "utp_id": "677",
-      "sede_utp": true
+      "utp_id": "80",
+      "sede_utp": false
     },
     "2400109": {
       "type": "municipality",
@@ -33080,7 +33076,7 @@
     "1507474": {
       "type": "municipality",
       "name": "São João de Pirabas",
-      "utp_id": "677",
+      "utp_id": "80",
       "sede_utp": false
     },
     "UTP_678": {
@@ -37780,20 +37776,6 @@
       "regiao_metropolitana": "Recorte Metropolitano do Distrito Federal e Entorno",
       "utp_id": "53",
       "sede_utp": true
-    },
-    "UTP_nan": {
-      "type": "utp",
-      "utp_id": "nan"
-    },
-    "4300001": {
-      "type": "municipality",
-      "name": "Área Operacional \"Lagoa Mirim\"",
-      "utp_id": "nan"
-    },
-    "4300002": {
-      "type": "municipality",
-      "name": "Área Operacional \"Lagoa dos Patos\"",
-      "utp_id": "nan"
     }
   },
   "utp_seeds": {
@@ -37851,7 +37833,6 @@
     "237": 1505536,
     "649": 1505809,
     "662": 1506138,
-    "677": 1506203,
     "298": 1506807,
     "NOVA6": 1507904,
     "737": 1508001,
@@ -39108,7 +39089,7 @@
     "3151701": 2,
     "3161700": 3,
     "2911907": 2,
-    "1506203": 2,
+    "1506203": 1,
     "3536406": 0,
     "5107297": 1,
     "2515104": 0,
@@ -41335,7 +41316,7 @@
     "1712157": 3,
     "4303673": 0,
     "3108701": 0,
-    "1507474": 2,
+    "1507474": 1,
     "2209872": 0,
     "2807105": 0,
     "1507466": 1,

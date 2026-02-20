@@ -51,12 +51,12 @@ class MapState(rx.State):
         """Returns the URL for the current map version."""
         safe_version = "".join(c for c in self.current_version if c.isalnum() or c in ".-_")
         # Served at root because it's in assets/
-        return f"/map_{safe_version}.html"
+        return f"/map_viewer_{safe_version}.html"
 
     async def generate_map(self):
-        """Background task to generate the map if it doesn't exist."""
+        """Background task to generate the amCharts map if it doesn't exist."""
         safe_version = "".join(c for c in self.current_version if c.isalnum() or c in ".-_")
-        filename = f"map_{safe_version}.html"
+        filename = f"map_viewer_{safe_version}.html"
         file_path = MAPS_DIR / filename
         
         # Check if exists
@@ -70,47 +70,45 @@ class MapState(rx.State):
         
         try:
             # Run generation in thread pool to avoid blocking async loop
-            # We can use asyncio.to_thread for this
             import asyncio
+            from .amcharts_generator import AmChartsMapGenerator
+            
+            # Map version to snapshot step
+            version_to_step = {
+                "8.0": "step1",   # Initial
+                "8.1": "step5",   # Post-unitary
+                "8.2": "step6",   # Sede consolidation
+                "8.3": "step8"    # Final (border validation)
+            }
             
             # Define synchronous generation function to run in thread
             def _generate():
-                df_muni = get_municipios_df_cached()
-                gdf = get_municipalities_gdf_cached()
-                
-                if df_muni is None or gdf is None:
+                try:
+                    step = version_to_step.get(self.current_version, "step8")
+                    title = f"Versão {self.current_version}"
+                    
+                    # Initialize generator
+                    data_root = PROJECT_ROOT / "data"
+                    generator = AmChartsMapGenerator(data_root)
+                    
+                    # Generate and save
+                    success = generator.generate_and_save(step, title, file_path)
+                    
+                    if success:
+                        logger.info(f"✅ amCharts map generated: {filename}")
+                    else:
+                        logger.error(f"❌ Failed to generate amCharts map: {filename}")
+                    
+                    return success
+                except Exception as e:
+                    logger.error(f"Error in _generate: {e}", exc_info=True)
                     return False
-                
-                # Filter logic would go here
-                gdf_filtered = gdf.copy()
-                title = f"Versão {self.current_version}"
-                
-                m = render_map_with_flow_popups(
-                    gdf_filtered=gdf_filtered,
-                    df_municipios=df_muni,
-                    title=title,
-                    global_colors=get_coloring_cached(),
-                    gdf_rm=get_rm_gdf_cached(),
-                    show_rm_borders=True,
-                    show_state_borders=True,
-                    gdf_states=get_states_gdf_cached(),
-                    PASTEL_PALETTE=get_palette(),
-                    scroll_wheel_zoom=False  # Disable scroll zoom for Reflex interface
-                )
-                
-                if m:
-                    # Manually render and save to avoid potential m.save() threading issues
-                    html_content = m.get_root().render()
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        f.write(html_content)
-                    return True
-                return False
 
             # Await the thread
             success = await asyncio.to_thread(_generate)
             
             if not success:
-               logger.error("Map generation failed inside thread.")
+               logger.error("amCharts map generation failed inside thread.")
 
         except Exception as e:
             logger.error(f"Error in background map generation: {e}", exc_info=True)

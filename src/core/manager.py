@@ -116,11 +116,23 @@ class GeoValidaManager:
             # --- POPULAR O GRAFO TERRITORIAL ---
             self.logger.info("Populando grafo territorial...")
             
+            # --- FILTRAR ÁREAS OPERACIONAIS DO IBGE ---
+            # IBGE codes 4300001 (Lagoa Mirim) and 4300002 (Lagoa dos Patos)
+            # are operational areas (lakes), not real municipalities.
+            # They should not be part of the territorial hierarchy.
+            OPERATIONAL_AREAS = {4300001, 4300002}
+            
+            filtered_municipios = [m for m in municipios if m['cd_mun'] not in OPERATIONAL_AREAS]
+            filtered_count = len(municipios) - len(filtered_municipios)
+            
+            if filtered_count > 0:
+                self.logger.info(f"  🌊 Filtered out {filtered_count} operational areas (lakes): {OPERATIONAL_AREAS}")
+            
             # 1. Criar dicionário de municípios para lookup rápido
-            mun_dict = {m['cd_mun']: m for m in municipios}
+            mun_dict = {m['cd_mun']: m for m in filtered_municipios}
             
             # 2. Iterar sobre cada município e criar a hierarquia
-            for mun in municipios:
+            for mun in filtered_municipios:
                 cd_mun = int(mun['cd_mun'])
                 nm_mun = mun.get('nm_mun', str(cd_mun))
                 utp_id = str(mun.get('utp_id', 'SEM_UTP'))
@@ -155,11 +167,12 @@ class GeoValidaManager:
             
             self.logger.info(f"  ✓ Grafo populado: {len(self.graph.hierarchy.nodes)} nós")
             
-            # Carregar nos componentes
-            self.analyzer.full_flow_df = df_municipios
+            # Carregar nos componentes (usando dados filtrados)
+            df_municipios_filtered = pd.DataFrame(filtered_municipios)
+            self.analyzer.full_flow_df = df_municipios_filtered
             
-            # Armazenar dados na memoria
-            self.municipios_data = df_municipios
+            # Armazenar dados na memoria (sem áreas operacionais)
+            self.municipios_data = df_municipios_filtered
             self.utps_data = df_utps
             self.metadata = metadata
             
@@ -182,11 +195,25 @@ class GeoValidaManager:
             self.logger.warning("Falha ao carregar de initialization.json, tentando fallback...")
             # Fallback: carregamento tradicional
             try:
+                # Define operational areas to filter (lakes, not real municipalities)
+                OPERATIONAL_AREAS = {4300001, 4300002}
+                
                 self.logger.info(f"Carregando UTP base de {FILES['utp_base']}...")
                 if str(FILES['utp_base']).endswith('.xlsx'):
                     df_utp = pd.read_excel(FILES['utp_base'], dtype=str)
                 else:
                     df_utp = pd.read_csv(FILES['utp_base'], sep=',', encoding='latin1', on_bad_lines='skip', engine='python', dtype=str)
+                
+                # Filter operational areas from UTP base
+                if 'CD_MUN' in df_utp.columns:
+                    original_count = len(df_utp)
+                    df_utp['CD_MUN_INT'] = df_utp['CD_MUN'].astype(str).str.split('.').str[0].astype(int)
+                    df_utp = df_utp[~df_utp['CD_MUN_INT'].isin(OPERATIONAL_AREAS)]
+                    df_utp = df_utp.drop(columns=['CD_MUN_INT'])
+                    filtered_count = original_count - len(df_utp)
+                    if filtered_count > 0:
+                        self.logger.info(f"  Filtered out {filtered_count} operational areas (lakes)")
+                
                 self.logger.info(f"  ✓ UTP: {len(df_utp)} linhas carregadas")
                 
                 self.logger.info(f"Carregando SEDE+REGIC de {FILES['sede_regic']}...")

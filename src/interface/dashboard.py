@@ -25,7 +25,7 @@ from src.interface.map_flow_render import render_map_with_flow_popups
 
 # ===== CONFIGURAÇÃO DA PÁGINA =====
 st.set_page_config(
-    page_title="GeoValida - Consolidação Territorial",
+    page_title="Unidade Territorial de Planejamento",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -305,6 +305,68 @@ def get_state_boundaries(gdf):
 
 
 
+def render_territorial_config_table(step_key: str, snapshot_loader: "SnapshotLoader", allowed_cd_mun: set = None) -> pd.DataFrame:
+    """
+    Builds a territorial configuration table from a snapshot.
+
+    Each row represents one UTP with:
+      - UTP: utp_id
+      - Sede: name of the municipality where sede_utp == True
+      - Qtd. Municípios: total municipalities in the UTP
+      - Municípios: comma-separated list of municipality names
+
+    Args:
+        step_key: snapshot key ('step1', 'step5', 'step6', 'step8')
+        snapshot_loader: SnapshotLoader instance
+        allowed_cd_mun: optional set of cd_mun strings to filter municipalities.
+                        If None, all municipalities in the snapshot are shown.
+
+    Returns:
+        DataFrame with the columns above, sorted by UTP.
+    """
+    data = snapshot_loader.load_snapshot(step_key)
+    if not data:
+        return pd.DataFrame()
+
+    nodes = data.get("nodes", {})
+
+    # Collect municipality-level nodes only
+    utps: dict[str, dict] = {}  # utp_id -> {sede, municipios: list}
+    for node_id, attrs in nodes.items():
+        if not node_id.isdigit():
+            continue
+        if allowed_cd_mun is not None and node_id not in allowed_cd_mun:
+            continue
+
+        utp_id = str(attrs.get("utp_id", "SEM_UTP"))
+        name = attrs.get("name", node_id)
+        is_sede = bool(attrs.get("sede_utp", False))
+
+        if utp_id not in utps:
+            utps[utp_id] = {"sede": None, "municipios": []}
+
+        utps[utp_id]["municipios"].append(name)
+        if is_sede:
+            utps[utp_id]["sede"] = name
+
+    if not utps:
+        return pd.DataFrame()
+
+    rows = []
+    for utp_id, info in utps.items():
+        muns_sorted = sorted(info["municipios"])
+        sede = info["sede"] or "—"
+        rows.append({
+            "UTP": utp_id,
+            "Sede": sede,
+            "Qtd. Municípios": len(muns_sorted),
+            "Municípios": ", ".join(muns_sorted),
+        })
+
+    df = pd.DataFrame(rows).sort_values("UTP").reset_index(drop=True)
+    return df
+
+
 def create_enriched_utp_summary(df_municipios):
     """
     Cria resumo enriquecido das UTPs com métricas territoriais relevantes.
@@ -559,7 +621,7 @@ def render_dashboard(manager):
     # Flags de controle de fluxo (inicializa se não existir).columns([2, 1, 1])
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        st.title("GeoValida - Consolidação Territorial")
+        st.title("Unidade Territorial de Planejamento")
         st.markdown("Visualização da distribuição inicial e pós-consolidação de UTPs")
     
     with col3:
@@ -696,10 +758,10 @@ def render_dashboard(manager):
     with tab1:
         st.markdown("### <span class='step-badge step-initial'>Versão 8.0</span> Distribuição Inicial", unsafe_allow_html=True)
         st.markdown("""
-        **Antes da v8, o maior desafio era a integridade referencial. Com base no estudo da versão 7, foi possível identificar tais erros:**
+        **Antes da v8, o maior desafio era a integridade referencial. Com base no estudo da versão 7, foi possível efetuar as seguintes melhorias**
         
-        *   **Erros de Continuidade:** 3 UTPs não possuíram municípios conexos territorialmente, totalizando 24 municípios.
-        *   **Erros de Região Metropolitana:** 169 UTPs apresentavam discrepância entre as regiões metropolitanas, totalizando 2154 municípios.
+        *   **Continuidade:** 3 UTPs não possuíram municípios conexos territorialmente, totalizando 24 municípios.
+        *   **Região Metropolitana:** 169 UTPs apresentavam discrepância entre as regiões metropolitanas, totalizando 2154 municípios.
         
         *Esta é configuração inicial considerada pela ferramenta, para as demais consolidações de versões.*
         """)
@@ -783,6 +845,16 @@ def render_dashboard(manager):
                 st.components.v1.html(map_html, height=600, scrolling=False)
         
         st.markdown("---")
+        st.markdown("#### Configuração Territorial")
+        st.caption("UTPs, sedes e municípios conforme o snapshot desta versão (v8.0 – inicial)")
+        _allowed_muns_tab1 = set(df_filtered['cd_mun'].astype(str).tolist()) if not df_filtered.empty else None
+        df_config_tab1 = render_territorial_config_table('step1', snapshot_loader, _allowed_muns_tab1)
+        if not df_config_tab1.empty:
+            st.dataframe(df_config_tab1, hide_index=True, use_container_width=True, height=400)
+        else:
+            st.info("Snapshot da versão inicial não encontrado. Execute o pipeline completo.")
+        
+        st.markdown("---")
         st.markdown("#### Resumo das UTPs")
         st.caption("Características socioeconômicas e territoriais agregadas por UTP")
         
@@ -849,9 +921,33 @@ def render_dashboard(manager):
                         st.rerun()
                     else:
                         st.error("Erro!")
+        # === MÉTRICAS PADRONIZADAS (sempre visíveis) ===
+        # Verifica diretamente o snapshot step5 — independente do consolidation_result.json
+        _df_metrics_tab2 = snapshot_loader.get_snapshot_dataframe('step5')
+        if not _df_metrics_tab2.empty and selected_ufs:
+            _df_metrics_tab2 = _df_metrics_tab2[
+                _df_metrics_tab2['cd_mun'].isin(df_filtered['cd_mun'])
+            ].copy()
+
+        if not _df_metrics_tab2.empty:
+            _src_label = "v8.1 – pós consolidação de unitárias"
+            _df_m = _df_metrics_tab2
+        else:
+            _src_label = "v8.0 – distribuição inicial (snapshot v8.1 não encontrado)"
+            _df_m = df_filtered
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Municípios", _df_m['cd_mun'].nunique(), f"{df_municipios['cd_mun'].nunique()} total")
+        with col2:
+            st.metric("UTPs", _df_m['utp_id'].nunique(), f"{len(utps_list)} total")
+        with col3:
+            st.metric("Estados", _df_m['uf'].nunique(), f"{len(ufs)} total")
+        st.caption(f"📊 Dados: {_src_label}")
+
         st.markdown("---")
-        
-        
+
+
         if consolidation_loader.is_executed():
             # IMPORTANTE: Usar snapshot pós-unitárias (Steps 5+7) ao invés do resultado completo
             # Isso garante que as consolidações de sedes NÃO apareçam nesta aba
@@ -869,22 +965,6 @@ def render_dashboard(manager):
                 # Filtrar DF do snapshot pelos filtros da UI se necessario (ex: UFs)
                 if selected_ufs:
                      df_consolidated = df_consolidated[df_consolidated['cd_mun'].isin(df_filtered['cd_mun'])].copy()
-            
-            # === MÉTRICAS PADRONIZADAS ===
-            if not df_consolidated.empty:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    # Contagem única de municípios
-                    current_unique = df_consolidated['cd_mun'].nunique() if 'cd_mun' in df_consolidated.columns else len(df_consolidated)
-                    # Total depende do contexto, aqui usamos o filtered original como referência total ou o próprio consolidado
-                    total_unique = df_municipios['cd_mun'].nunique()
-                    st.metric("Municípios", current_unique, f"{total_unique} total")
-                with col2:
-                    current_utps = df_consolidated['utp_id'].nunique()
-                    st.metric("UTPs", current_utps, f"{len(utps_list)} total")
-                with col3:
-                    current_ufs = df_consolidated['uf'].nunique()
-                    st.metric("Estados", current_ufs, f"{len(ufs)} total")
             
             st.markdown("---")
             st.markdown("#### Mapa Pós-Consolidação")
@@ -979,6 +1059,16 @@ def render_dashboard(manager):
                 if m:
                     map_html = m._repr_html_()
                     st.components.v1.html(map_html, height=600, scrolling=False)
+            
+            st.markdown("---")
+            st.markdown("#### Configuração Territorial")
+            st.caption("UTPs, sedes e municípios conforme o snapshot desta versão (v8.1 – pós UTPs unitárias)")
+            _allowed_muns_tab2 = set(df_filtered['cd_mun'].astype(str).tolist()) if not df_filtered.empty else None
+            df_config_tab2 = render_territorial_config_table('step5', snapshot_loader, _allowed_muns_tab2)
+            if not df_config_tab2.empty:
+                st.dataframe(df_config_tab2, hide_index=True, use_container_width=True, height=400)
+            else:
+                st.info("Snapshot da versão 8.1 não encontrado. Execute o pipeline.")
             
             st.markdown("---")
             st.markdown("#### Registro de Consolidações")
@@ -1139,6 +1229,16 @@ def render_dashboard(manager):
                       st.components.v1.html(map_html, height=600, scrolling=False)
              else:
                  st.warning("Mapa indisponível")
+             
+             st.markdown("---")
+             st.markdown("#### Configuração Territorial")
+             st.caption("UTPs, sedes e municípios conforme o snapshot desta versão (v8.2 – pós consolidação de sedes)")
+             _allowed_muns_tab3 = set(df_filtered['cd_mun'].astype(str).tolist()) if not df_filtered.empty else None
+             df_config_tab3 = render_territorial_config_table('step6', snapshot_loader, _allowed_muns_tab3)
+             if not df_config_tab3.empty:
+                 st.dataframe(df_config_tab3, hide_index=True, use_container_width=True, height=400)
+             else:
+                 st.info("Snapshot da versão 8.2 não encontrado. Execute o pipeline.")
              
              st.markdown("---")
              # Tabela de Mudanças Específicas desta Etapa
@@ -1327,6 +1427,16 @@ def render_dashboard(manager):
                      logging.error(f"Erro ao renderizar mapa com fluxos: {e}")
                      st.error(f"Erro ao renderizar mapa: {e}")
                      st.error(f"Erro ao renderizar mapa: {e}")
+                 
+                 st.markdown("---")
+                 st.markdown("#### Configuração Territorial")
+                 st.caption("UTPs, sedes e municípios conforme o snapshot desta versão (v8.3 – pós validação de fronteiras)")
+                 _allowed_muns_tab4 = set(df_filtered['cd_mun'].astype(str).tolist()) if not df_filtered.empty else None
+                 df_config_tab4 = render_territorial_config_table('step8', snapshot_loader, _allowed_muns_tab4)
+                 if not df_config_tab4.empty:
+                     st.dataframe(df_config_tab4, hide_index=True, use_container_width=True, height=400)
+                 else:
+                     st.info("Snapshot da versão 8.3 não encontrado. Execute o pipeline.")
                  
                  st.markdown("---")
         

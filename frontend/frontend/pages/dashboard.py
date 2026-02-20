@@ -4,6 +4,7 @@ from ..components.sidebar import sidebar
 from ..components.topbar import topbar
 from ..components.map_card import map_card
 from ..components.utp_card import utp_card
+from ..state import MapState
 from ..styles import PAGE_COLOR
 
 def dashboard() -> rx.Component:
@@ -65,4 +66,5 @@ def dashboard() -> rx.Component:
         spacing="0",
         height="100vh",
         overflow="auto", # Allow scrolling when content exceeds viewport (e.g. zoom)
+        on_mount=MapState.generate_map,
     )

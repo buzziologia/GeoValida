@@ -4,7 +4,7 @@ Helper function to render map with flow information popups for border validation
 import folium
 import logging
 import pandas as pd
-from src.interface.flow_utils import get_top_destinations_for_municipality, format_flow_popup_html
+from src.interface.flow_utils import get_top_destinations_for_municipality, format_flow_popup_html, load_idh_pib_data, get_idh_for_municipality
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +172,13 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
         # Pre-calcular popups para performance (evitar loop de 5000+ layers)
         logging.info("Calculando popups de fluxo (Fall-back)...")
         
+        # Load IDH/PIB once for all popups
+        _pib_by_cd_mun: dict = {}
+        try:
+            _, _pib_by_cd_mun = load_idh_pib_data()
+        except Exception as _e:
+            logger.warning(f"Could not load IDH/PIB for fallback popups: {_e}")
+        
         # Criar coluna popup_html
         # Usar dict lookup para performance
         df_lookup = df_municipios.set_index('cd_mun') if 'cd_mun' in df_municipios.columns else pd.DataFrame()
@@ -228,7 +235,8 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
                         get_popup_content._debug_counter += 1
                     
                     top_destinations = get_top_destinations_for_municipality(
-                        mun_data, df_municipios, top_n=5, df_impedance=df_impedance
+                        mun_data, df_municipios, top_n=5, df_impedance=df_impedance,
+                        pib_by_cd_mun=_pib_by_cd_mun
                     )
                 else:
                     logger.warning(f"Municipality {cd_mun} not found in df_municipios index")
@@ -239,6 +247,10 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
                 regic = row.get('regic', mun_data.get('regic', '-'))
                 populacao = row.get('populacao_2022', mun_data.get('populacao_2022', 0))
                 uf = row.get('uf', mun_data.get('uf', ''))
+                
+                # Lookup IDH and PIB
+                idh_val = get_idh_for_municipality(nm_mun, uf)
+                pib_val = _pib_by_cd_mun.get(str(cd_mun)) or _pib_by_cd_mun.get(cd_mun)
                 
                 # Calculate total flow if not available
                 from src.interface.flow_utils import get_municipality_total_flow
@@ -253,7 +265,9 @@ def render_map_with_flow_popups(gdf_filtered, df_municipios, title="Mapa",
                     regic=regic,
                     populacao=populacao,
                     total_viagens=total_viagens,
-                    uf=uf
+                    uf=uf,
+                    idh=idh_val,
+                    pib_mil_reais=pib_val,
                 )
             except Exception as e:
                 return f"Erro: {str(e)}"

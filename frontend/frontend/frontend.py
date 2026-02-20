@@ -9,6 +9,7 @@ from .components.topbar import topbar
 from .components.login_card import login_card
 from .components.utp_card import utp_card
 from .components.map_card import map_card
+from .test_popup import test_popup_flow
 
 app = rx.App(
     stylesheets=[
@@ -53,5 +54,6 @@ def rascunho():
         padding="20px",
     )
 app.add_page(rascunho, route="/teste")
+app.add_page(test_popup_flow, route="/popup-flow")
 app.add_page(login, route="/login")
 app.add_page(dashboard, route="/dashboard")
