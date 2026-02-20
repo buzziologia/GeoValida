@@ -204,7 +204,7 @@ class SedeConsolidator:
                     'sede_origem': sede_origem,
                     'nm_origem': row['nm_sede'],
                     'utp_origem': utp_origem,
-                    'sede_destino': sede_destino,
+                    'sede_destino': sede_utp_destino if sede_utp_destino else sede_destino,
                     'utp_destino': utp_destino,
                     'motivo_rejeicao': f'Tempo de viagem {tempo_viagem:.2f}h > 2h'
                 })
@@ -223,7 +223,7 @@ class SedeConsolidator:
                     'sede_origem': sede_origem,
                     'nm_origem': row['nm_sede'],
                     'utp_origem': utp_origem,
-                    'sede_destino': sede_destino,
+                    'sede_destino': sede_utp_destino if sede_utp_destino else sede_destino,
                     'utp_destino': utp_destino,
                     'motivo_rejeicao': 'UTP destino não tem sede ativa'
                 })
@@ -236,7 +236,7 @@ class SedeConsolidator:
                     'sede_origem': sede_origem,
                     'nm_origem': row['nm_sede'],
                     'utp_origem': utp_origem,
-                    'sede_destino': sede_destino,
+                    'sede_destino': sede_utp_destino if sede_utp_destino else sede_destino,
                     'utp_destino': utp_destino,
                     'motivo_rejeicao': 'Sede destino não encontrada em métricas'
                 })
@@ -255,7 +255,7 @@ class SedeConsolidator:
                         'sede_origem': sede_origem,
                         'nm_origem': row['nm_sede'],
                         'utp_origem': utp_origem,
-                        'sede_destino': sede_destino,
+                        'sede_destino': sede_utp_destino if sede_utp_destino else sede_destino,
                         'utp_destino': utp_destino,
                         'rm_origem': rm_origem,
                         'rm_destino': rm_destino,
@@ -277,11 +277,12 @@ class SedeConsolidator:
                 continue
             
             # RULE 4: Score validation
+            # STRICT: Only score=0 origins can consolidate
             score_origem = self._get_sede_score(row)
             score_destino = self._get_sede_score(dest_row)
             
-            # Destination must have better or equal infrastructure
-            if score_destino < score_origem:
+            # Origin MUST have score = 0 (no airport, no tourism)
+            if score_origem != 0:
                 filter_stats['rejected_by_score'] += 1
                 rejected.append({
                     'sede_origem': sede_origem,
@@ -295,9 +296,44 @@ class SedeConsolidator:
                     'tempo_viagem_h': tempo_viagem,
                     'rm_origem': rm_origem,
                     'rm_destino': rm_destino,
-                    'motivo_rejeicao': f'Score destino ({score_destino}) < origem ({score_origem})'
+                    'motivo_rejeicao': f'Origem tem score {score_origem}, mas só score=0 pode consolidar'
                 })
                 continue
+            
+            # If destination has score >= 1 (airport or tourism): APPROVED
+            if score_destino >= 1:
+                # Will be approved below
+                pass
+            # If both are score=0: use REGIC as tiebreaker
+            elif score_destino == 0:
+                regic_origem = self._get_regic_rank(row.get('regic', ''))
+                regic_destino = self._get_regic_rank(dest_row.get('regic', ''))
+                
+                # Destination must have BETTER (lower) REGIC rank
+                if regic_destino >= regic_origem:
+                    filter_stats['rejected_by_score'] += 1
+                    # Store the UTP seed (sede_utp_destino) as the recorded destination
+                    # so transitive checks can find approved chains that start at that sede.
+                    rejected.append({
+                        'sede_origem': sede_origem,
+                        'nm_origem': row['nm_sede'],
+                        'utp_origem': utp_origem,
+                        # record the actual sede (seed) of the destination UTP
+                        'sede_destino': sede_utp_destino if sede_utp_destino else sede_destino,
+                        'nm_destino': dest_row['nm_sede'],
+                        'utp_destino': utp_destino,
+                        'score_origem': score_origem,
+                        'score_destino': score_destino,
+                        'regic_origem': row.get('regic', ''),
+                        'regic_destino': dest_row.get('regic', ''),
+                        'regic_rank_origem': regic_origem,
+                        'regic_rank_destino': regic_destino,
+                        'tempo_viagem_h': tempo_viagem,
+                        'rm_origem': rm_origem,
+                        'rm_destino': rm_destino,
+                        'motivo_rejeicao': f'Ambos score=0, mas destino REGIC pior/igual (rank {regic_destino} >= {regic_origem})'
+                    })
+                    continue
             
             # APPROVED!
             filter_stats['accepted'] += 1
@@ -305,7 +341,8 @@ class SedeConsolidator:
                 'sede_origem': sede_origem,
                 'nm_origem': row['nm_sede'],
                 'utp_origem': utp_origem,
-                'sede_destino': sede_destino,
+                # record the actual seed (sede) of the destination UTP so chains resolve correctly
+                'sede_destino': sede_utp_destino,
                 'nm_destino': dest_row['nm_sede'],
                 'utp_destino': utp_destino,
                 'score_origem': score_origem,
@@ -330,6 +367,310 @@ class SedeConsolidator:
         
         # Store rejected for CSV export
         self.rejected_candidates = rejected
+        
+        return candidates
+    
+    def _find_final_destination(self, sede_id: str, approved_map: Dict[str, Dict]) -> Tuple[str, List[str]]:
+        """
+        Resolves the complete transitive chain to find the final destination.
+        
+        Args:
+            sede_id: Starting sede ID
+            approved_map: Dict mapping sede_origem -> candidate dict
+        
+        Returns:
+            Tuple of (final_destination_sede_id, chain_of_sedes)
+        
+        Example:
+            If A -> B and B -> C and C -> D, returns (D, [A, B, C, D])
+        """
+        chain = [sede_id]
+        current = sede_id
+        visited = {sede_id}  # Prevent infinite loops
+        
+        # Follow the chain until we reach a sede that doesn't move
+        while current in approved_map:
+            next_sede = str(approved_map[current]['sede_destino'])
+            
+            # Check for circular reference
+            if next_sede in visited:
+                self.logger.warning(f"⚠️  Circular reference detected in chain: {chain} -> {next_sede}")
+                break
+            
+            chain.append(next_sede)
+            visited.add(next_sede)
+            current = next_sede
+        
+        final_destination = chain[-1]
+        return final_destination, chain
+    
+    def _has_flow_or_time(self, origin: int, dest: int, flow_df: pd.DataFrame, max_time: float = 2.0) -> bool:
+        """
+        Checks whether there is any recorded flow or travel time between origin and dest.
+        Returns True if a flow record exists (viagens>0) or a travel time <= max_time is recorded.
+        """
+        if flow_df is None:
+            return False
+
+        try:
+            rows = flow_df[(flow_df['mun_origem'].astype(int) == int(origin)) & (flow_df['mun_destino'].astype(int) == int(dest))]
+        except Exception:
+            # If columns are missing or types unexpected
+            try:
+                rows = flow_df[(flow_df['origem'].astype(int) == int(origin)) & (flow_df['destino'].astype(int) == int(dest))]
+            except Exception:
+                return False
+
+        if rows is None or rows.empty:
+            return False
+
+        # Check explicit travel time columns if present
+        for col in ['tempo_viagem', 'tempo_ate_destino_h', 'tempo_h', 'tempo']:
+            if col in rows.columns:
+                try:
+                    vals = rows[col].astype(str).str.replace(',', '.').astype(float)
+                    if (vals <= max_time).any():
+                        return True
+                except Exception:
+                    # ignore parse errors
+                    pass
+
+        # Require explicit travel time <= max_time. Do NOT accept mere presence of flow records
+        # as proof of acceptable travel time — that would allow transitive moves without time constraint.
+        return False
+
+
+    def _apply_transitive_consolidation(self, candidates: List[Dict], df_metrics: pd.DataFrame, flow_df: pd.DataFrame = None) -> List[Dict]:
+        """
+        Applies transitive consolidation rule:
+        If A -> B was rejected due to tie (score=0 both, REGIC equal),
+        but B -> C (or B -> C -> D -> ...) was approved (final destination has better infrastructure),
+        then APPROVE A -> B (because B is validated by its approval to final destination).
+        
+        IMPORTANT: Score comparison is made between A and the FINAL destination (C), not intermediate (B).
+        
+        Example: 409 (Belém) -> 366 (Cabrobó) rejected (tie)
+                 366 (Cabrobó) -> 675 (Serra Talhada) approved
+                 => Check: score(409) vs score(675) - if 675 is better, APPROVE: 409 -> 366
+        
+        This allows the natural consolidation chain: 409→366→675
+        """
+        self.logger.info("\n🔗 Checking for transitive consolidation opportunities...")
+        
+        # Build mapping of approved consolidations: sede_origem -> candidate
+        approved_map = {str(c['sede_origem']): c for c in candidates}
+        
+        # Find rejected candidates due to tie (score=0 both, REGIC equal/worse)
+        tie_rejected = [
+            r for r in self.rejected_candidates 
+            if 'Ambos score=0' in r.get('motivo_rejeicao', '') and 
+               'REGIC pior/igual' in r.get('motivo_rejeicao', '')
+        ]
+        
+        new_approved_candidates = []
+        transitive_count = 0
+        rejected_to_remove = []
+        # Specific (sede_b, sede_final) pairs whose B->C candidate must be cancelled
+        # because a local A->B fallback was chosen (A has no flow to C).
+        # Using pairs avoids collateral cancellation of unrelated chains that share sede_b.
+        candidates_to_cancel: Set[Tuple[str, str]] = set()
+        
+        for rejected in tie_rejected:
+            sede_a = str(rejected['sede_origem'])  # e.g., 409 (Belém)
+            sede_b = str(rejected['sede_destino'])  # e.g., 366 (Cabrobó)
+            utp_a = rejected['utp_origem']
+            utp_b = rejected['utp_destino']
+            
+            # Check if B -> ... -> FINAL exists in approved candidates
+            if sede_b in approved_map:
+                # Find the complete chain and final destination
+                sede_final, chain = self._find_final_destination(sede_b, approved_map)
+                chain_str = ' -> '.join(chain)
+                
+                self.logger.info(f"   🔗 Transitive opportunity: {sede_a} -> {sede_b} (rejected/tie) + chain {chain_str} (approved)")
+                
+                # Get metrics for A (origin)
+                row_a = df_metrics[df_metrics['cd_mun_sede'] == int(sede_a)]
+                if row_a.empty:
+                    self.logger.info(f"      ❌ Rejected: Sede A ({sede_a}) not found in metrics")
+                    continue
+                row_a = row_a.iloc[0]
+                
+                # Get metrics for B (intermediate)
+                row_b = df_metrics[df_metrics['cd_mun_sede'] == int(sede_b)]
+                if row_b.empty:
+                    self.logger.info(f"      ❌ Rejected: Sede B ({sede_b}) not found in metrics")
+                    continue
+                row_b = row_b.iloc[0]
+                
+                # CRITICAL: Get metrics for FINAL destination (not intermediate B)
+                row_final = df_metrics[df_metrics['cd_mun_sede'] == int(sede_final)]
+                if row_final.empty:
+                    self.logger.info(f"      ❌ Rejected: Final destination ({sede_final}) not found in metrics")
+                    continue
+                row_final = row_final.iloc[0]
+                
+                # Compare A with FINAL destination (not B)
+                score_a = self._get_sede_score(row_a)
+                score_b = self._get_sede_score(row_b)
+                score_final = self._get_sede_score(row_final)
+                
+                # Validate: A can only move if FINAL destination has better score
+                # Origin MUST have score = 0 (already validated in original filter)
+                should_approve = False
+                approval_reason = ""
+                
+                if score_final >= 1:
+                    # Final destination has infrastructure (airport or tourism)
+                    should_approve = True
+                    approval_reason = f"Final destination {sede_final} has score {score_final}"
+                elif score_final == 0 and score_a == 0:
+                    # Both score=0: use REGIC as tiebreaker
+                    regic_a = self._get_regic_rank(row_a.get('regic', ''))
+                    regic_final = self._get_regic_rank(row_final.get('regic', ''))
+                    
+                    if regic_final < regic_a:
+                        # Final destination has better REGIC
+                        should_approve = True
+                        approval_reason = f"Final destination {sede_final} has better REGIC (rank {regic_final} < {regic_a})"
+                    else:
+                        self.logger.info(f"      ❌ Rejected: Final destination REGIC not better (rank {regic_final} >= {regic_a})")
+                        continue
+                else:
+                    self.logger.info(f"      ❌ Rejected: Final destination score ({score_final}) not sufficient")
+                    continue
+                
+                # NEW: Ensure A has recorded flow/tempo to FINAL destination before allowing transitive move
+                if not self._has_flow_or_time(int(sede_a), int(sede_final), flow_df):
+                    self.logger.info(f"      ❌ Rejected TRANSITIVE: Origin {sede_a} has no recorded flow/time to final destination {sede_final}")
+
+                    # Prefer local consolidation A->B if:
+                    # (1) A has recorded flow/time to B AND UTPs are adjacent, OR
+                    # (2) the SEDE municipalities of A and B are directly adjacent (share a physical border),
+                    #     which is a strong enough geographic signal even without explicit flow data.
+                    has_flow_to_b = self._has_flow_or_time(int(sede_a), int(sede_b), flow_df)
+                    utps_adjacent = self._validate_utp_adjacency(utp_a, utp_b)
+                    sedes_directly_adjacent = (
+                        self.adjacency_graph is not None
+                        and int(sede_a) in self.adjacency_graph
+                        and int(sede_b) in self.adjacency_graph[int(sede_a)]
+                    )
+
+                    if (has_flow_to_b and utps_adjacent) or sedes_directly_adjacent:
+                        if sedes_directly_adjacent and not (has_flow_to_b and utps_adjacent):
+                            local_reason = 'Local preference: sede municipalities are directly adjacent (share border); no flow to final destination.'
+                            self.logger.info(
+                                f"      ℹ️ Prefer local consolidation: {sede_a} -> {sede_b} "
+                                f"(sedes directly adjacent — municipalities share border)"
+                            )
+                        else:
+                            local_reason = 'Local preference: origin has flow/time to intermediate and UTPs are adjacent; no flow to final.'
+                            self.logger.info(
+                                f"      ℹ️ Prefer local consolidation: {sede_a} -> {sede_b} "
+                                f"(has flow/time to intermediate and UTPs adjacent)"
+                            )
+
+                        # Create a local candidate pointing to B
+                        try:
+                            row_b = df_metrics[df_metrics['cd_mun_sede'] == int(sede_b)].iloc[0]
+                        except Exception:
+                            row_b = None
+
+                        local_candidate = {
+                            'sede_origem': int(sede_a),
+                            'nm_origem': rejected.get('nm_origem', row_a['nm_sede']),
+                            'utp_origem': utp_a,
+                            'sede_destino': int(sede_b),
+                            'nm_destino': row_b['nm_sede'] if row_b is not None else '',
+                            'utp_destino': utp_b,
+                            'score_origem': self._get_sede_score(row_a),
+                            'score_destino': self._get_sede_score(row_b) if row_b is not None else 0,
+                            'tempo_viagem_h': rejected.get('tempo_viagem_h', 0.0),
+                            'rm_origem': rejected.get('rm_origem', ''),
+                            'rm_destino': rejected.get('rm_destino', ''),
+                            'motivo_rejeicao': '',
+                            'transitive': False,
+                            'transitive_reason': local_reason
+                        }
+                        new_approved_candidates.append(local_candidate)
+                        rejected_to_remove.append(rejected)
+                        # Cancel the SPECIFIC B->C move in this chain (not all B->anything).
+                        # A has no flow to C, so B absorbs A locally and should NOT move on to C.
+                        candidates_to_cancel.add((str(sede_b), str(sede_final)))
+                        self.logger.info(
+                            f"      🚫 Will cancel specific candidate {sede_b}->{sede_final} "
+                            f"(A has no flow to C; B absorbs A locally)."
+                        )
+                    else:
+                        # Neither flow/time+adjacency nor direct municipality border: keep rejected.
+                        self.logger.info(
+                            f"      ❌ No local fallback available for {sede_a} -> {sede_b}: "
+                            f"no flow to final ({sede_final}), no flow to intermediate, and sedes not directly adjacent."
+                        )
+                    continue
+                
+                # APPROVE A -> FINAL (approve A moving directly to the final destination)
+                # This prevents A from remaining in B after the chain is applied.
+                transitive_count += 1
+                # Determine UTP of final destination
+                utp_final = self.graph.get_municipality_utp(sede_final)
+
+                new_candidate = {
+                    'sede_origem': int(sede_a),
+                    'nm_origem': rejected.get('nm_origem', row_a['nm_sede']),
+                    'utp_origem': utp_a,
+                    # Point directly to the final destination sede (C)
+                    'sede_destino': int(sede_final),
+                    'nm_destino': row_final.get('nm_sede', ''),
+                    'utp_destino': utp_final,
+                    'score_origem': score_a,
+                    'score_destino': score_final,
+                    'tempo_viagem_h': rejected.get('tempo_viagem_h', 0.0),
+                    'rm_origem': rejected.get('rm_origem', ''),
+                    'rm_destino': rejected.get('rm_destino', ''),
+                    'motivo_rejeicao': '',
+                    'transitive': True,
+                    'transitive_reason': f"Chain {chain_str}: {approval_reason}"
+                }
+                
+                new_approved_candidates.append(new_candidate)
+                rejected_to_remove.append(rejected)
+                
+                self.logger.info(f"      ✅ Transitive APPROVAL: {sede_a} ({row_a['nm_sede']}) -> {sede_b} ({row_b['nm_sede']}) [chain: {chain_str}, reason: {approval_reason}]")
+        
+        # Remove approved rejections from rejected_candidates
+        for rej in rejected_to_remove:
+            sede_a = str(rej['sede_origem'])
+            sede_b = str(rej['sede_destino'])
+            self.rejected_candidates = [
+                r for r in self.rejected_candidates 
+                if not (str(r.get('sede_origem')) == sede_a and str(r.get('sede_destino')) == sede_b)
+            ]
+        
+        # Cancel specific B->C candidates where a local A->B was preferred (A has no flow to C).
+        if candidates_to_cancel:
+            before = len(candidates)
+            cancelled_info = [
+                f"{c['sede_origem']} ({c.get('nm_origem', '?')}) -> {c['sede_destino']} ({c.get('nm_destino', '?')})"
+                for c in candidates
+                if (str(c['sede_origem']), str(c['sede_destino'])) in candidates_to_cancel
+            ]
+            candidates = [
+                c for c in candidates
+                if (str(c['sede_origem']), str(c['sede_destino'])) not in candidates_to_cancel
+            ]
+            after = len(candidates)
+            for info in cancelled_info:
+                self.logger.info(f"   🚫 Cancelled specific candidate: {info} (A has no flow to C; B absorbs A locally)")
+            self.logger.info(
+                f"   Candidates reduced {before}->{after} after cancelling {len(candidates_to_cancel)} specific B->C pair(s)."
+            )
+
+        if transitive_count > 0 or new_approved_candidates:
+            self.logger.info(f"✅ Created {transitive_count} transitive approval(s) and {len(new_approved_candidates) - transitive_count} local fallback(s)")
+            candidates.extend(new_approved_candidates)
+        else:
+            self.logger.info("   No transitive consolidations found")
         
         return candidates
 
@@ -418,6 +759,10 @@ class SedeConsolidator:
         # Filter candidates using simplified rules
         candidates = self._filter_candidates(df_metrics)
         
+        # Apply transitive consolidation rule
+        # If A->B rejected (tie) but B->C approved, create A->C
+        candidates = self._apply_transitive_consolidation(candidates, df_metrics, flow_df)
+        
         # Resolve mutual preference conflicts (A -> B and B -> A).
         # When two sedes prefer each other, only allow the movement of the one
         # whose total originating flow is smaller. If flows are equal, reject both
@@ -489,7 +834,23 @@ class SedeConsolidator:
         
         # Execute consolidations
         total_changes = 0
-        
+        # NORMALIZE candidates: ensure utp_destino is resolved from sede_destino when missing
+        for c in candidates:
+            try:
+                # If utp_destino is missing or indicates not found, try to resolve
+                utp_dest = c.get('utp_destino')
+                sede_dest = c.get('sede_destino')
+                if (not utp_dest or str(utp_dest).upper() in ['NAO_ENCONTRADO', 'NAN', '']) and sede_dest:
+                    try:
+                        resolved = self.graph.get_municipality_utp(int(sede_dest))
+                    except Exception:
+                        resolved = None
+                    if resolved:
+                        c['utp_destino'] = resolved
+            except Exception:
+                # Do not fail consolidation due to normalization issues
+                self.logger.debug('Failed to normalize candidate utp_destino for candidate', exc_info=True)
+
         for cand in candidates:
             sede_origem = cand['sede_origem']
             sede_destino = cand['sede_destino'] if 'sede_destino' in cand else None
@@ -525,27 +886,44 @@ class SedeConsolidator:
                         self.logger.error(f"    Failed to update GDF for {mun}: {e}")
             
             # Log consolidation
+            is_transitive = cand.get('transitive', False)
+            reason_suffix = f" (TRANSITIVE: {cand.get('transitive_reason', '?')})" if is_transitive else ""
+            
+            # Ensure target UTP is resolved before recording consolidation
+            resolved_target_utp = utp_destino
+            try:
+                if (not resolved_target_utp or str(resolved_target_utp).upper() in ['NAO_ENCONTRADO', 'NAN', ''] ) and sede_destino:
+                    resolved = self.graph.get_municipality_utp(int(sede_destino))
+                    if resolved and str(resolved).upper() not in ['NAO_ENCONTRADO', 'NAN', '']:
+                        resolved_target_utp = resolved
+            except Exception:
+                # ignore resolution failure and keep original utp_destino
+                resolved_target_utp = resolved_target_utp
+
             cons_entry = self.consolidation_manager.add_consolidation(
                 source_utp=utp_origem,
-                target_utp=utp_destino,
-                reason=f"Sede consolidation (full UTP): Score {cand['score_origem']}->{cand['score_destino']}, Travel {cand['tempo_viagem_h']:.2f}h",
+                target_utp=resolved_target_utp,
+                reason=f"Sede consolidation (full UTP): Score {cand['score_origem']}->{cand['score_destino']}, Travel {cand['tempo_viagem_h']:.2f}h{reason_suffix}",
                 details={
                     "sede_id": sede_origem,
-                    "is_sede": True,  # FIX: Add flag so it appears in CSV
+                    "sede_destino": sede_destino,
                     "nm_sede": cand['nm_origem'],
+                    "is_sede": True,
                     "municipalities_moved": len(muns_to_move),
                     "score_origem": cand['score_origem'],
                     "score_destino": cand['score_destino'],
                     "tempo_viagem_h": cand['tempo_viagem_h'],
                     "rm_origem": cand.get('rm_origem', ''),
-                    "rm_destino": cand.get('rm_destino', '')
+                    "rm_destino": cand.get('rm_destino', ''),
+                    "transitive": is_transitive,
+                    "transitive_reason": cand.get('transitive_reason', '') if is_transitive else ''
                 }
             )
             self.changes_current_run.append(cons_entry)
             
 
             # Revoga status de sede apenas se a sede de origem realmente mudou de UTP
-            if sede_origem in muns_to_move and str(self.graph.get_municipality_utp(sede_origem)) == str(utp_destino):
+            if sede_origem in muns_to_move and str(self.graph.get_municipality_utp(sede_origem)) == utp_destino:
                 if self.graph.hierarchy.has_node(sede_origem):
                     self.logger.debug(f"DEBUG: Revoking sede flag for municipality {sede_origem} (UTP {utp_origem} -> {utp_destino})")
                     self.graph.hierarchy.nodes[sede_origem]['sede_utp'] = False
@@ -561,16 +939,16 @@ class SedeConsolidator:
 
                 # Se a UTP ficou vazia --> remover seed e nó
                 if not remaining_muns:
-                    if str(utp_origem) in self.graph.utp_seeds:
-                        self.logger.debug(f"DEBUG: Deleting utp_seeds[{utp_origem}] -> {self.graph.utp_seeds.get(str(utp_origem))}")
-                        del self.graph.utp_seeds[str(utp_origem)]
+                    if utp_origem in self.graph.utp_seeds:
+                        self.logger.debug(f"DEBUG: Deleting utp_seeds[{utp_origem}] -> {self.graph.utp_seeds.get(utp_origem)}")
+                        del self.graph.utp_seeds[utp_origem]
                     if self.graph.hierarchy.has_node(utp_node):
                         self.logger.debug(f"DEBUG: Removing UTP node {utp_node} from hierarchy (empty after move)")
                         self.graph.hierarchy.remove_node(utp_node)
                 else:
                     # Partial move: apenas reatribuir seed se a seed atual não pertence mais à UTP
-                    if str(utp_origem) in self.graph.utp_seeds:
-                        current_seed = self.graph.utp_seeds[str(utp_origem)]
+                    if utp_origem in self.graph.utp_seeds:
+                        current_seed = self.graph.utp_seeds[utp_origem]
                         if (not self.graph.hierarchy.has_node(current_seed)) or (current_seed not in remaining_muns):
                             # Escolher nova sede: preferir município já marcado como sede, senão o primeiro
                             new_sede = None
@@ -583,7 +961,7 @@ class SedeConsolidator:
 
                             if new_sede is not None:
                                 self.logger.debug(f"DEBUG: Reassigning seed for UTP {utp_origem} -> {new_sede} (was {current_seed})")
-                                self.graph.utp_seeds[str(utp_origem)] = new_sede
+                                self.graph.utp_seeds[utp_origem] = new_sede
                                 if self.graph.hierarchy.has_node(new_sede):
                                     self.graph.hierarchy.nodes[new_sede]['sede_utp'] = True
                     else:
@@ -591,14 +969,28 @@ class SedeConsolidator:
                         if remaining_muns:
                             new_sede = remaining_muns[0]
                             self.logger.debug(f"DEBUG: Setting missing seed for UTP {utp_origem} -> {new_sede}")
-                            self.graph.utp_seeds[str(utp_origem)] = new_sede
+                            self.graph.utp_seeds[utp_origem] = new_sede
                             if self.graph.hierarchy.has_node(new_sede):
                                 self.graph.hierarchy.nodes[new_sede]['sede_utp'] = True
 
             # GARANTIR QUE A UTP DE DESTINO SEMPRE TERÁ UMA SEDE REGISTRADA
             # Se não houver sede registrada para a UTP destino, definir a sede_destino (ou sede_origem se apropriado)
             utp_destino_str = str(utp_destino)
-            if utp_destino_str not in self.graph.utp_seeds or not self.graph.hierarchy.has_node(self.graph.utp_seeds[utp_destino_str]):
+            # CRITICAL FIX: Check if destination UTP has a VALID sede (exists AND belongs to this UTP)
+            needs_new_sede = False
+            if utp_destino_str not in self.graph.utp_seeds:
+                needs_new_sede = True
+            else:
+                current_sede_id = self.graph.utp_seeds[utp_destino_str]
+                # Check if sede node exists
+                if not self.graph.hierarchy.has_node(current_sede_id):
+                    needs_new_sede = True
+                # CRITICAL: Check if sede actually belongs to this UTP
+                elif str(self.graph.get_municipality_utp(current_sede_id)) != utp_destino_str:
+                    self.logger.warning(f"DEBUG: UTP {utp_destino} sede {current_sede_id} no longer belongs to this UTP! Reassigning...")
+                    needs_new_sede = True
+            
+            if needs_new_sede:
                 # Preferir sede_destino se ela está entre os municípios da UTP destino
                 if sede_destino in muns_to_move and str(self.graph.get_municipality_utp(sede_destino)) == utp_destino_str:
                     self.logger.debug(f"DEBUG: Setting utp_seeds[{utp_destino_str}] -> {sede_destino} (preferred destination sede)")
@@ -618,6 +1010,18 @@ class SedeConsolidator:
                     self.graph.utp_seeds[utp_destino_str] = mun_fallback
                     if self.graph.hierarchy.has_node(mun_fallback):
                         self.graph.hierarchy.nodes[mun_fallback]['sede_utp'] = True
+                else:
+                    # Last resort: get ANY municipality currently in destination UTP
+                    utp_destino_node = f"UTP_{utp_destino}"
+                    if self.graph.hierarchy.has_node(utp_destino_node):
+                        dest_muns = [n for n in self.graph.hierarchy.successors(utp_destino_node) 
+                                    if self.graph.hierarchy.nodes[n].get('type') == 'municipality']
+                        if dest_muns:
+                            mun_fallback = dest_muns[0]
+                            self.logger.warning(f"DEBUG: Emergency fallback setting utp_seeds[{utp_destino_str}] -> {mun_fallback}")
+                            self.graph.utp_seeds[utp_destino_str] = mun_fallback
+                            if self.graph.hierarchy.has_node(mun_fallback):
+                                self.graph.hierarchy.nodes[mun_fallback]['sede_utp'] = True
             
             total_changes += 1
             self.logger.info(f"  ✅ Sede consolidation complete: {len(muns_to_move)} municipalities moved")
@@ -693,6 +1097,8 @@ class SedeConsolidator:
                     'rm_origem': change['details'].get('rm_origem', ''),
                     'rm_destino': change['details'].get('rm_destino', ''),
                     'status': 'APROVADO',
+                    'transitive': 'SIM' if change['details'].get('transitive', False) else 'NAO',
+                    'transitive_reason': change['details'].get('transitive_reason', ''),
                     'motivo_rejeicao': ''
                 })
         
@@ -709,6 +1115,8 @@ class SedeConsolidator:
                 'rm_origem': rejected.get('rm_origem', ''),
                 'rm_destino': rejected.get('rm_destino', ''),
                 'status': 'REJEITADO',
+                'transitive': 'NAO',
+                'transitive_reason': '',
                 'motivo_rejeicao': rejected.get('motivo_rejeicao', '')
             })
         
